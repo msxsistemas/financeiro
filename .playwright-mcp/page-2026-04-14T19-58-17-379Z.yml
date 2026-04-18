@@ -1,8 +1,0 @@
-- generic [ref=e3]:
-  - button "☰" [ref=e4] [cursor=pointer]
-  - main [ref=e5]:
-    - generic [ref=e9]:
-      - generic [ref=e10]:
-        - heading "💳 Cartões de Crédito" [level=1] [ref=e11]
-        - paragraph [ref=e12]: Gerencie faturas e lançamentos
-      - button "+ Novo Cartão" [ref=e13] [cursor=pointer]

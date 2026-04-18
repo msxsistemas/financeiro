@@ -1,5 +1,0 @@
-- generic [ref=e2]:
-  - status [ref=e71]: Sessao expirada. Faca login novamente.
-  - generic [ref=e3]:
-    - button "☰" [ref=e4] [cursor=pointer]
-    - main [ref=e5]
