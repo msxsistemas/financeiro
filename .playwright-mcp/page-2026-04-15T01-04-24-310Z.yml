@@ -1,0 +1,67 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "📺 IPTV" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Gerenciamento de servidores e clientes
+        - generic [ref=e13]:
+          - button "+ Novo Servidor" [active] [ref=e14] [cursor=pointer]
+          - button "+ Novo Cliente" [ref=e15] [cursor=pointer]
+      - generic [ref=e16]:
+        - button "📊 Consolidado" [ref=e17] [cursor=pointer]
+        - button "📺 Por Servidor" [ref=e18] [cursor=pointer]
+        - button "⚙️ Servidores" [ref=e19] [cursor=pointer]
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - paragraph [ref=e25]: Clientes Ativos
+            - paragraph [ref=e26]: "0"
+          - generic [ref=e27]:
+            - paragraph [ref=e28]: Valor do Crédito
+            - paragraph [ref=e29]: R$ 0,00
+            - paragraph [ref=e30]: Carteira ativa
+          - generic [ref=e31]:
+            - paragraph [ref=e32]: Faturamento Mensal
+            - paragraph [ref=e33]: R$ 0,00
+            - paragraph [ref=e34]: "Custo total: R$ 0,00"
+          - generic [ref=e35]:
+            - paragraph [ref=e36]: Lucro Mensal
+            - paragraph [ref=e37]: R$ 0,00
+            - paragraph [ref=e38]: —
+        - generic [ref=e39]:
+          - textbox "Buscar cliente..." [ref=e40]
+          - combobox [ref=e41]:
+            - option "Todos os servidores" [selected]
+          - combobox [ref=e42]:
+            - option "Todos os status" [selected]
+            - option "Ativo"
+            - option "Suspenso"
+            - option "Cancelado"
+        - generic [ref=e43]:
+          - generic [ref=e45]: 0 clientes
+          - generic [ref=e46]:
+            - paragraph [ref=e47]: 📺
+            - paragraph [ref=e48]: Nenhum cliente encontrado
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - heading "Novo Servidor" [level=2] [ref=e53]
+          - button "×" [ref=e54] [cursor=pointer]
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e58]: Nome *
+            - 'textbox "Ex: Servidor Principal" [ref=e59]'
+          - generic [ref=e60]:
+            - generic [ref=e61]: URL do Servidor
+            - textbox "https://servidor.com:8080" [ref=e62]
+          - generic [ref=e63]:
+            - generic [ref=e64]: Descrição
+            - textbox "Detalhes do servidor..." [ref=e65]
+          - generic [ref=e66]:
+            - generic [ref=e67]: Custo por Crédito (R$)
+            - spinbutton [ref=e68]
+            - paragraph [ref=e69]: Custo total = valor por crédito × clientes ativos
+          - generic [ref=e70]:
+            - button "Cancelar" [ref=e71] [cursor=pointer]
+            - button "Salvar" [ref=e72] [cursor=pointer]

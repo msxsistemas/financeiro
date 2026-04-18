@@ -1,0 +1,44 @@
+- generic [ref=e2]:
+  - status [ref=e65]: "Venda registrada! Total: R$ 50,00"
+  - generic [ref=e3]:
+    - button "☰" [ref=e4] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - heading "🛒 PDV — Ponto de Venda" [level=1] [ref=e11]
+          - generic [ref=e12]:
+            - generic [ref=e13]:
+              - generic [ref=e14]: 🔍
+              - textbox "Buscar produto..." [ref=e15]
+            - combobox [ref=e16]:
+              - option "Todas" [selected]
+          - 'button "Produto Teste R$ 50,00 Est: 10 un" [ref=e66] [cursor=pointer]':
+            - paragraph [ref=e41]: Produto Teste
+            - paragraph [ref=e42]: R$ 50,00
+            - paragraph [ref=e44]: "Est: 10 un"
+        - generic [ref=e22]:
+          - generic [ref=e24]: Carrinho
+          - generic [ref=e67]:
+            - paragraph [ref=e68]: 🛒
+            - paragraph [ref=e69]: Clique nos produtos para adicionar
+          - generic [ref=e29]:
+            - textbox "👤 Cliente (opcional)" [ref=e31]
+            - textbox "📝 Observações (opcional)" [ref=e32]
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - generic [ref=e35]: 0 itens
+              - generic [ref=e36]: R$ 0,00
+            - generic [ref=e37]:
+              - button "📋 Orçamento" [disabled] [ref=e38]
+              - button "✅ Vender" [disabled] [ref=e39]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e72]: ✅ Venda registrada
+            - button "✕" [ref=e73] [cursor=pointer]
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - generic [ref=e76]: 1× Produto Teste
+              - generic [ref=e77]: R$ 50,00
+            - generic [ref=e78]:
+              - generic [ref=e79]: Total
+              - generic [ref=e80]: R$ 50,00

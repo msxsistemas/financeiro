@@ -1,0 +1,63 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Contatos" [level=1] [ref=e11]
+          - paragraph [ref=e12]: 0 contatos
+        - button "+ Novo Contato" [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: 🔍
+          - textbox "Buscar por nome, telefone, email ou CPF/CNPJ..." [ref=e17]
+        - combobox [ref=e18]:
+          - option "Todos" [selected]
+          - option "Clientes"
+          - option "Fornecedores"
+      - generic [ref=e20]:
+        - paragraph [ref=e21]: 👥
+        - paragraph [ref=e22]: Nenhum contato cadastrado
+        - paragraph [ref=e23]: Adicione clientes e fornecedores para começar
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - heading "Novo Contato" [level=2] [ref=e28]
+          - button "×" [ref=e29] [cursor=pointer]
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - generic [ref=e34]: Nome *
+              - textbox "Nome completo ou razão social" [active] [ref=e35]
+            - generic [ref=e36]:
+              - generic [ref=e37]: Tipo
+              - combobox [ref=e38]:
+                - option "Cliente" [selected]
+                - option "Fornecedor"
+            - generic [ref=e39]:
+              - generic [ref=e40]: CPF / CNPJ
+              - textbox "000.000.000-00" [ref=e41]
+            - generic [ref=e42]:
+              - generic [ref=e43]: WhatsApp / Telefone
+              - textbox "5511999999999" [ref=e44]
+            - generic [ref=e45]:
+              - generic [ref=e46]: Email
+              - textbox "email@exemplo.com" [ref=e47]
+          - generic [ref=e48]:
+            - generic [ref=e49]: Endereço
+            - textbox "Rua, número, bairro" [ref=e50]
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]: CEP
+              - textbox "00000-000" [ref=e54]
+            - generic [ref=e55]:
+              - generic [ref=e56]: Cidade
+              - textbox "Cidade" [ref=e57]
+            - generic [ref=e58]:
+              - generic [ref=e59]: Estado
+              - textbox "SP" [ref=e60]
+          - generic [ref=e61]:
+            - generic [ref=e62]: Observações
+            - textbox "Informações adicionais..." [ref=e63]
+          - generic [ref=e64]:
+            - button "Cancelar" [ref=e65] [cursor=pointer]
+            - button "Criar" [ref=e66] [cursor=pointer]

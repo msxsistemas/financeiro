@@ -1,0 +1,45 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "💳 Cartões de Crédito" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Gerencie faturas e lançamentos
+        - button "+ Novo Cartão" [active] [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - paragraph [ref=e16]: 💳
+        - paragraph [ref=e17]: Nenhum cartão cadastrado
+        - paragraph [ref=e18]: Adicione seus cartões para controlar as faturas
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - heading "Novo Cartão" [level=2] [ref=e23]
+          - button "×" [ref=e24] [cursor=pointer]
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: Nome *
+            - 'textbox "Ex: Nubank, Inter, Bradesco Visa..." [ref=e29]'
+          - generic [ref=e30]:
+            - generic [ref=e31]: Limite (R$)
+            - spinbutton [ref=e32]
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - generic [ref=e35]: Dia fechamento
+              - spinbutton [ref=e36]: "1"
+            - generic [ref=e37]:
+              - generic [ref=e38]: Dia vencimento
+              - spinbutton [ref=e39]: "10"
+          - generic [ref=e40]:
+            - generic [ref=e41]: Cor
+            - generic [ref=e42]:
+              - button [ref=e43] [cursor=pointer]
+              - button [ref=e44] [cursor=pointer]
+              - button [ref=e45] [cursor=pointer]
+              - button [ref=e46] [cursor=pointer]
+              - button [ref=e47] [cursor=pointer]
+              - button [ref=e48] [cursor=pointer]
+              - button [ref=e49] [cursor=pointer]
+              - button [ref=e50] [cursor=pointer]
+          - generic [ref=e51]:
+            - button "Cancelar" [ref=e52] [cursor=pointer]
+            - button "Criar" [ref=e53] [cursor=pointer]

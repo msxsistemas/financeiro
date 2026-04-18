@@ -1,0 +1,8 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "🔀 Divisão de Contas" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Divida gastos entre pessoas
+      - button "+ Nova Divisão" [ref=e13] [cursor=pointer]

@@ -1,0 +1,26 @@
+- generic [ref=e2]:
+  - status [ref=e187]: Erro ao carregar inadimplentes
+  - generic [ref=e31]:
+    - button "☰" [ref=e32] [cursor=pointer]
+    - main [ref=e33]:
+      - generic [ref=e188]:
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - heading "Painel de Inadimplentes" [level=1] [ref=e191]
+            - paragraph [ref=e192]: Devedores com obrigações vencidas (dívidas + empréstimos)
+          - button "💬 Cobrar Todos via WhatsApp" [disabled] [ref=e193]:
+            - generic [ref=e194]: 💬
+            - text: Cobrar Todos via WhatsApp
+        - generic [ref=e195]:
+          - generic [ref=e196]:
+            - paragraph [ref=e197]: Total em Aberto
+            - paragraph [ref=e198]: R$ 0,00
+          - generic [ref=e199]:
+            - paragraph [ref=e200]: Devedores
+            - paragraph [ref=e201]: "0"
+          - generic [ref=e202]:
+            - paragraph [ref=e203]: Dívidas Vencidas
+            - paragraph [ref=e204]: "0"
+          - generic [ref=e205]:
+            - paragraph [ref=e206]: Parcelas Vencidas
+            - paragraph [ref=e207]: "0"

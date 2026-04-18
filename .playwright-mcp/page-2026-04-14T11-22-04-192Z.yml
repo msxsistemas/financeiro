@@ -1,0 +1,49 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "WhatsApp" [level=1] [ref=e10]
+        - paragraph [ref=e11]: Integração via uazapi para envio de mensagens e notificações
+      - generic [ref=e12]:
+        - heading "⚙️ Configurações da Instância" [level=2] [ref=e13]
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - generic [ref=e16]: URL do servidor uazapi
+            - textbox "https://seu-servidor.uazapi.com" [ref=e17]
+            - paragraph [ref=e18]: URL base do seu servidor uazapi (sem / no final)
+          - generic [ref=e19]:
+            - generic [ref=e20]: Token da instância
+            - textbox "Token da sua instância uazapi" [ref=e21]
+            - paragraph [ref=e22]: Token específico da instância (header "token")
+          - generic [ref=e23]:
+            - generic [ref=e24]: Seu número (resumo semanal)
+            - textbox "5511999999999 (com DDI)" [ref=e25]
+            - paragraph [ref=e26]: Número que receberá o resumo financeiro toda segunda-feira às 8h
+          - generic [ref=e27]:
+            - button "Salvar configurações" [ref=e28] [cursor=pointer]
+            - button "🔍 Verificar conexão" [ref=e29] [cursor=pointer]
+      - generic [ref=e30]:
+        - heading "💬 Enviar Mensagem" [level=2] [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]: Número (com DDI)
+            - textbox "5511999999999" [ref=e35]
+            - paragraph [ref=e36]: "Formato: 55 + DDD + número (sem espaços ou traços)"
+          - generic [ref=e37]:
+            - generic [ref=e38]: Mensagem
+            - textbox "Digite a mensagem... Suporta *negrito*, _itálico_" [ref=e39]
+            - paragraph [ref=e40]: 0 caracteres | Use *texto* para negrito, _texto_ para itálico
+          - button "📤 Enviar mensagem" [ref=e41] [cursor=pointer]
+      - generic [ref=e42]:
+        - heading "ℹ️ Notificações automáticas" [level=3] [ref=e43]
+        - list [ref=e44]:
+          - listitem [ref=e45]:
+            - text: Nas
+            - strong [ref=e46]: Dívidas
+            - text: ", use o botão \"💬 Notificar\" para enviar cobrança direta ao contato"
+          - listitem [ref=e47]:
+            - text: Na
+            - strong [ref=e48]: Agenda
+            - text: ", configure eventos com notificação WhatsApp para lembretes automáticos"
+          - listitem [ref=e49]: Os lembretes são disparados automaticamente quando chegar a hora configurada

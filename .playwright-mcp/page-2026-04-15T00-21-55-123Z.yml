@@ -1,0 +1,30 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "🛒 PDV — Ponto de Venda" [level=1] [ref=e11]
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - generic [ref=e14]: 🔍
+            - textbox "Buscar produto..." [ref=e15]
+          - combobox [ref=e16]:
+            - option "Todas" [selected]
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: 📦
+          - paragraph [ref=e21]: Nenhum produto encontrado
+      - generic [ref=e22]:
+        - generic [ref=e24]: Carrinho
+        - generic [ref=e26]:
+          - paragraph [ref=e27]: 🛒
+          - paragraph [ref=e28]: Clique nos produtos para adicionar
+        - generic [ref=e29]:
+          - textbox "👤 Cliente (opcional)" [ref=e31]
+          - textbox "📝 Observações (opcional)" [ref=e32]
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: 0 itens
+            - generic [ref=e36]: R$ 0,00
+          - generic [ref=e37]:
+            - button "📋 Orçamento" [disabled] [ref=e38]
+            - button "✅ Vender" [disabled] [ref=e39]

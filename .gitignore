@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build output
+frontend/dist/
+backend/dist/
+backend/logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Pacotes de deploy
+*.tar.gz
+
+# OS / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# PM2
+.pm2/
+ecosystem.config.local.js
+
+# Uploads/backups
+backend/uploads/
+backend/backups/
+
+# Claude
+.claude/settings.local.json

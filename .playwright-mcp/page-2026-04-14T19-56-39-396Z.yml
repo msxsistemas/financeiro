@@ -1,0 +1,15 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Dívidas" [level=1] [ref=e11]
+          - paragraph [ref=e12]: 0 registros
+        - generic [ref=e13]:
+          - button "📥 CSV" [ref=e14] [cursor=pointer]
+          - button "+ Nova Dívida" [ref=e15] [cursor=pointer]
+      - generic [ref=e16]:
+        - button "💸 A Pagar" [ref=e17] [cursor=pointer]
+        - button "💵 A Receber" [ref=e18] [cursor=pointer]
+      - generic [ref=e20]: Carregando...

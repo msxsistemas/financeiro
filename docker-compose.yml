@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: financeiro_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: financeiro
+      POSTGRES_USER: financeiro_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financeiro_pass_2024}
+    volumes:
+      - financeiro_pg_data:/var/lib/postgresql/data
+      - ./backend/src/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - financeiro_backups:/backups
+    ports:
+      - "5433:5432"
+    networks:
+      - financeiro_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U financeiro_user -d financeiro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: financeiro_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://financeiro_user:${POSTGRES_PASSWORD:-financeiro_pass_2024}@postgres:5432/financeiro
+      JWT_SECRET: ${JWT_SECRET:-msx_fin_Zk9xL2mN_v7Qw8RpJ3tYu6Bf5Dh0AeGc4InMo1Sl_2024_prod}
+      COOKIE_SECRET: ${COOKIE_SECRET:-msx_cookie_Hj7kLp2Qr9Ts0Uw3Vx6By8Az1Cd4Ef5Gh_2024}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: ${FRONTEND_URL:-https://financeiro.msxsystem.site}
+      UAZAPI_URL: ${UAZAPI_URL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+    ports:
+      - "3001:3001"
+    networks:
+      - financeiro_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    volumes:
+      - financeiro_backups:/var/www/financeiro/backups
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://apifinanceiro.msxsystem.site}
+    container_name: financeiro_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - financeiro_net
+    depends_on:
+      - backend
+
+networks:
+  financeiro_net:
+    driver: bridge
+
+volumes:
+  financeiro_pg_data:
+    driver: local
+  financeiro_backups:
+    driver: local

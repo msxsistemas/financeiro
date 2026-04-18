@@ -1,0 +1,67 @@
+- generic [ref=e2]:
+  - status [ref=e224]: Cliente cadastrado!
+  - generic [ref=e3]:
+    - button "☰" [ref=e4] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - heading "📺 IPTV" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Gerenciamento de servidores e clientes
+          - generic [ref=e13]:
+            - button "+ Novo Servidor" [ref=e14] [cursor=pointer]
+            - button "+ Novo Cliente" [ref=e15] [cursor=pointer]
+        - generic [ref=e16]:
+          - button "📊 Consolidado" [ref=e17] [cursor=pointer]
+          - button "📺 Por Servidor" [ref=e18] [cursor=pointer]
+          - button "⚙️ Servidores" [ref=e19] [cursor=pointer]
+        - generic [ref=e225]:
+          - generic [ref=e226]:
+            - generic [ref=e227]:
+              - paragraph [ref=e228]: Clientes Ativos
+              - paragraph [ref=e229]: "1"
+            - generic [ref=e230]:
+              - paragraph [ref=e231]: Valor do Crédito
+              - paragraph [ref=e232]: R$ 35,00
+              - paragraph [ref=e233]: Carteira ativa
+            - generic [ref=e234]:
+              - paragraph [ref=e235]: Faturamento Mensal
+              - paragraph [ref=e236]: R$ 35,00
+              - paragraph [ref=e237]: "Custo: R$ 150,00"
+            - generic [ref=e238]:
+              - paragraph [ref=e239]: Lucro Mensal
+              - paragraph [ref=e240]: R$ -115,00
+              - paragraph [ref=e241]: "-328.6% margem"
+          - generic [ref=e242]:
+            - textbox "Buscar cliente..." [ref=e243]
+            - combobox [ref=e244]:
+              - option "Todos os servidores" [selected]
+              - option "Servidor Principal"
+            - combobox [ref=e245]:
+              - option "Todos os status" [selected]
+              - option "Ativo"
+              - option "Suspenso"
+              - option "Cancelado"
+          - generic [ref=e246]:
+            - generic [ref=e248]: 1 clientes
+            - table [ref=e250]:
+              - rowgroup [ref=e251]:
+                - row "Nome Servidor Plano Mensalidade Status Ações" [ref=e252]:
+                  - columnheader "Nome" [ref=e253]
+                  - columnheader "Servidor" [ref=e254]
+                  - columnheader "Plano" [ref=e255]
+                  - columnheader "Mensalidade" [ref=e256]
+                  - columnheader "Status" [ref=e257]
+                  - columnheader "Ações" [ref=e258]
+              - rowgroup [ref=e259]:
+                - row "João Silva 5511999990001 Servidor Principal Mensal R$ 35,00 Ativo ✏️ 🗑️" [ref=e260]:
+                  - cell "João Silva 5511999990001" [ref=e261]:
+                    - paragraph [ref=e262]: João Silva
+                    - paragraph [ref=e263]: "5511999990001"
+                  - cell "Servidor Principal" [ref=e264]
+                  - cell "Mensal" [ref=e265]
+                  - cell "R$ 35,00" [ref=e266]
+                  - cell "Ativo" [ref=e267]
+                  - cell "✏️ 🗑️" [ref=e268]:
+                    - button "✏️" [ref=e269] [cursor=pointer]
+                    - button "🗑️" [ref=e270] [cursor=pointer]

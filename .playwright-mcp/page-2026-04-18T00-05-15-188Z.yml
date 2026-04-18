@@ -1,0 +1,14 @@
+- generic [ref=e2]:
+  - status [ref=e411]: Erro ao carregar dados
+  - generic [ref=e3]:
+    - button "☰" [ref=e4] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e404]:
+        - generic [ref=e412]:
+          - heading "IPTV" [level=1] [ref=e413]
+          - paragraph [ref=e414]: Servidores, revendas e clientes
+        - generic [ref=e415]:
+          - button "+ Novo Servidor" [ref=e417] [cursor=pointer]
+          - generic [ref=e418]:
+            - paragraph [ref=e419]: 📺
+            - paragraph [ref=e420]: Nenhum servidor cadastrado

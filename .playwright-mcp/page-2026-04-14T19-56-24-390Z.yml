@@ -1,0 +1,213 @@
+- generic [ref=e3]:
+  - button "☰" [active] [ref=e4] [cursor=pointer]
+  - complementary [ref=e121]:
+    - generic [ref=e122]:
+      - generic [ref=e123]:
+        - generic [ref=e124]: 💎
+        - generic [ref=e125]: Financeiro
+      - button "✕" [ref=e126] [cursor=pointer]
+    - generic [ref=e127]:
+      - paragraph [ref=e128]: Administrador
+      - paragraph [ref=e129]: admin@financeiro.com
+    - navigation [ref=e130]:
+      - link "📊 Dashboard" [ref=e131] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e132]: 📊
+        - generic [ref=e133]: Dashboard
+      - link "💰 Transações" [ref=e134] [cursor=pointer]:
+        - /url: /transactions
+        - generic [ref=e135]: 💰
+        - generic [ref=e136]: Transações
+      - link "📋 Dívidas" [ref=e137] [cursor=pointer]:
+        - /url: /debts
+        - generic [ref=e138]: 📋
+        - generic [ref=e139]: Dívidas
+      - link "📦 Produtos" [ref=e140] [cursor=pointer]:
+        - /url: /products
+        - generic [ref=e141]: 📦
+        - generic [ref=e142]: Produtos
+      - link "🛒 PDV" [ref=e143] [cursor=pointer]:
+        - /url: /pdv
+        - generic [ref=e144]: 🛒
+        - generic [ref=e145]: PDV
+      - link "📈 Relatórios" [ref=e146] [cursor=pointer]:
+        - /url: /reports
+        - generic [ref=e147]: 📈
+        - generic [ref=e148]: Relatórios
+      - link "📅 Agenda" [ref=e149] [cursor=pointer]:
+        - /url: /calendar
+        - generic [ref=e150]: 📅
+        - generic [ref=e151]: Agenda
+      - link "💬 WhatsApp" [ref=e152] [cursor=pointer]:
+        - /url: /whatsapp
+        - generic [ref=e153]: 💬
+        - generic [ref=e154]: WhatsApp
+      - link "👥 Contatos" [ref=e155] [cursor=pointer]:
+        - /url: /contacts
+        - generic [ref=e156]: 👥
+        - generic [ref=e157]: Contatos
+      - link "🏦 Contas" [ref=e158] [cursor=pointer]:
+        - /url: /accounts
+        - generic [ref=e159]: 🏦
+        - generic [ref=e160]: Contas
+      - link "💳 Cartões" [ref=e161] [cursor=pointer]:
+        - /url: /credit-cards
+        - generic [ref=e162]: 💳
+        - generic [ref=e163]: Cartões
+      - link "🎯 Metas" [ref=e164] [cursor=pointer]:
+        - /url: /goals
+        - generic [ref=e165]: 🎯
+        - generic [ref=e166]: Metas
+      - link "🤝 Empréstimos" [ref=e167] [cursor=pointer]:
+        - /url: /loans
+        - generic [ref=e168]: 🤝
+        - generic [ref=e169]: Empréstimos
+      - link "⚠️ Inadimplentes" [ref=e170] [cursor=pointer]:
+        - /url: /delinquents
+        - generic [ref=e171]: ⚠️
+        - generic [ref=e172]: Inadimplentes
+      - link "📩 Log WhatsApp" [ref=e173] [cursor=pointer]:
+        - /url: /whatsapp-log
+        - generic [ref=e174]: 📩
+        - generic [ref=e175]: Log WhatsApp
+      - link "🔀 Divisões" [ref=e176] [cursor=pointer]:
+        - /url: /splits
+        - generic [ref=e177]: 🔀
+        - generic [ref=e178]: Divisões
+      - link "🔍 Busca" [ref=e179] [cursor=pointer]:
+        - /url: /search
+        - generic [ref=e180]: 🔍
+        - generic [ref=e181]: Busca
+      - link "🕒 Histórico" [ref=e182] [cursor=pointer]:
+        - /url: /history
+        - generic [ref=e183]: 🕒
+        - generic [ref=e184]: Histórico
+      - link "⚙️ Configurações" [ref=e185] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e186]: ⚙️
+        - generic [ref=e187]: Configurações
+    - generic [ref=e188]:
+      - button "🌙 Modo escuro" [ref=e189] [cursor=pointer]:
+        - generic [ref=e190]: 🌙
+        - generic [ref=e191]: Modo escuro
+      - button "🚪 Sair" [ref=e192] [cursor=pointer]:
+        - generic [ref=e193]: 🚪
+        - generic [ref=e194]: Sair
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Dashboard" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Visão geral das suas finanças
+        - generic [ref=e13]:
+          - combobox [ref=e14]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e15]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: Receitas do Mês
+            - generic [ref=e20]: 📈
+          - paragraph [ref=e21]: R$ 50,00
+          - paragraph [ref=e23]: Concluídas
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [ref=e26]: Despesas do Mês
+            - generic [ref=e27]: 📉
+          - paragraph [ref=e28]: R$ 0,00
+          - paragraph [ref=e30]: Concluídas
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Saldo
+            - generic [ref=e34]: 💰
+          - paragraph [ref=e35]: R$ 50,00
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: Dívidas Vencidas
+            - generic [ref=e39]: ⚠️
+          - paragraph [ref=e40]: "0"
+          - paragraph [ref=e42]: Requerem atenção
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: A Pagar
+            - generic [ref=e47]: 💸
+          - paragraph [ref=e48]: R$ 200,00
+          - paragraph [ref=e50]: 1 pendentes
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - generic [ref=e53]: A Receber
+            - generic [ref=e54]: 💵
+          - paragraph [ref=e55]: R$ 0,00
+          - paragraph [ref=e57]: 0 pendentes
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Estoque Baixo
+            - generic [ref=e61]: 📦
+          - paragraph [ref=e62]: "0"
+          - paragraph [ref=e64]: Produtos
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Próx. Eventos
+            - generic [ref=e68]: 📅
+          - paragraph [ref=e69]: "0"
+          - paragraph [ref=e71]: Nos próximos dias
+      - generic [ref=e72]:
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]: Empréstimos Ativos
+            - generic [ref=e76]: 🤝
+          - paragraph [ref=e77]: "1"
+          - paragraph [ref=e79]: contratos em aberto
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - generic [ref=e82]: A Receber (Empréstimos)
+            - generic [ref=e83]: 💰
+          - paragraph [ref=e84]: R$ 500,00
+          - paragraph [ref=e86]: parcelas pendentes
+      - generic [ref=e87]:
+        - heading "Fluxo de Caixa — Próximos 30 dias" [level=3] [ref=e88]
+        - img [ref=e89]
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - heading "Receitas vs Despesas (6 meses)" [level=3] [ref=e92]
+          - img [ref=e93]
+        - generic [ref=e94]:
+          - heading "Despesas por Categoria" [level=3] [ref=e95]
+          - generic [ref=e96]: Sem dados para o período
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - heading "Transações Recentes" [level=3] [ref=e99]
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - generic [ref=e103]: 📈
+                - generic [ref=e104]:
+                  - paragraph [ref=e105]: "Venda: Produto Teste"
+                  - paragraph [ref=e106]: Sem categoria
+              - generic [ref=e107]: +R$ 50,00
+            - generic [ref=e108]:
+              - generic [ref=e109]:
+                - generic [ref=e110]: 📈
+                - generic [ref=e111]:
+                  - paragraph [ref=e112]: Venda Teste
+                  - paragraph [ref=e113]: Sem categoria
+              - generic [ref=e114]: +R$ 150,00
+        - generic [ref=e115]:
+          - heading "Próximos Eventos" [level=3] [ref=e116]
+          - paragraph [ref=e118]: Nenhum evento próximo

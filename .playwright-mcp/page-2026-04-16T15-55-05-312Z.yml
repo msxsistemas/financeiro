@@ -1,0 +1,64 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e261]:
+      - generic [ref=e263]:
+        - heading "IPTV" [level=1] [ref=e264]
+        - paragraph [ref=e265]: Servidores, revendas e clientes
+      - generic [ref=e266]:
+        - generic [ref=e267]:
+          - paragraph [ref=e268]: Servidores
+          - paragraph [ref=e269]: "2"
+        - generic [ref=e270]:
+          - paragraph [ref=e271]: Revendedores
+          - paragraph [ref=e272]: "2"
+        - generic [ref=e273]:
+          - paragraph [ref=e274]: Meus Clientes
+          - paragraph [ref=e275]: "0"
+        - generic [ref=e276]:
+          - paragraph [ref=e277]: Faturamento
+          - paragraph [ref=e278]: R$ 650,00
+          - paragraph [ref=e279]: "Custo: R$ 360,00"
+        - generic [ref=e280]:
+          - paragraph [ref=e281]: Lucro Liquido
+          - paragraph [ref=e282]: R$ 290,00
+          - paragraph [ref=e283]: 44.6% margem
+      - generic [ref=e284]:
+        - button "Servidores & Apps" [ref=e285] [cursor=pointer]
+        - button "Revendas" [ref=e286] [cursor=pointer]
+        - button "Meus Clientes" [ref=e287] [cursor=pointer]
+      - generic [ref=e288]:
+        - button "+ Novo Servidor" [ref=e290] [cursor=pointer]
+        - generic [ref=e291]:
+          - generic [ref=e292]:
+            - generic [ref=e293]:
+              - heading "GF" [level=3] [ref=e294]
+              - generic [ref=e295]:
+                - button "✏️" [ref=e296] [cursor=pointer]
+                - button "🗑️" [ref=e297] [cursor=pointer]
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - paragraph [ref=e300]: "500"
+                - paragraph [ref=e301]: Clientes
+              - generic [ref=e302]:
+                - paragraph [ref=e303]: R$ 6,00
+                - paragraph [ref=e304]: Valor Credito
+            - generic [ref=e305]:
+              - generic [ref=e306]: "Receita: R$ 500,00"
+              - generic [ref=e307]: "Lucro: R$ 200,00"
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - heading "Genial" [level=3] [ref=e310]
+              - generic [ref=e311]:
+                - button "✏️" [ref=e312] [cursor=pointer]
+                - button "🗑️" [ref=e313] [cursor=pointer]
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - paragraph [ref=e316]: "100"
+                - paragraph [ref=e317]: Clientes
+              - generic [ref=e318]:
+                - paragraph [ref=e319]: R$ 6,00
+                - paragraph [ref=e320]: Valor Credito
+            - generic [ref=e321]:
+              - generic [ref=e322]: "Receita: R$ 150,00"
+              - generic [ref=e323]: "Lucro: R$ 90,00"

@@ -1,0 +1,31 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e250]:
+      - generic [ref=e251]:
+        - generic [ref=e252]:
+          - heading "Dívidas" [level=1] [ref=e253]
+          - paragraph [ref=e254]: 1 registros
+        - generic [ref=e255]:
+          - button "📥 CSV" [ref=e256] [cursor=pointer]
+          - button "+ Nova Dívida" [ref=e257] [cursor=pointer]
+      - generic [ref=e258]:
+        - button "Todos" [ref=e259] [cursor=pointer]
+        - button "Pendente" [ref=e260] [cursor=pointer]
+        - button "Parcial" [ref=e261] [cursor=pointer]
+        - button "Vencido" [ref=e262] [cursor=pointer]
+        - button "Pago" [ref=e263] [cursor=pointer]
+      - generic [ref=e265]:
+        - generic [ref=e266]:
+          - generic [ref=e268]:
+            - heading "Dívida Teste" [level=3] [ref=e269]
+            - generic [ref=e270]: Pago
+          - generic [ref=e271]:
+            - paragraph [ref=e272]: R$ 0,00
+            - paragraph [ref=e273]: de R$ 200,00
+        - generic [ref=e274]:
+          - button "Ver detalhes" [ref=e275] [cursor=pointer]
+          - button "📄 PDF" [ref=e276] [cursor=pointer]
+          - button "✏️ Editar" [ref=e277] [cursor=pointer]
+          - button "🗑️" [ref=e278] [cursor=pointer]
+      - paragraph [ref=e280]: — 1 registros —

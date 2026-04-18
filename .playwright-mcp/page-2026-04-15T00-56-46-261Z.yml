@@ -1,0 +1,87 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "📺 IPTV" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Gerenciamento de servidores e clientes
+        - generic [ref=e13]:
+          - button "+ Novo Servidor" [ref=e14] [cursor=pointer]
+          - button "+ Novo Cliente" [active] [ref=e15] [cursor=pointer]
+      - generic [ref=e16]:
+        - button "📊 Consolidado" [ref=e17] [cursor=pointer]
+        - button "📺 Por Servidor" [ref=e18] [cursor=pointer]
+        - button "⚙️ Servidores" [ref=e19] [cursor=pointer]
+      - generic [ref=e116]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - paragraph [ref=e145]: Clientes Ativos
+            - paragraph [ref=e146]: "0"
+          - generic [ref=e147]:
+            - paragraph [ref=e148]: Valor do Crédito
+            - paragraph [ref=e149]: R$ 0,00
+            - paragraph [ref=e150]: Carteira ativa
+          - generic [ref=e151]:
+            - paragraph [ref=e152]: Faturamento Mensal
+            - paragraph [ref=e153]: R$ 0,00
+            - paragraph [ref=e154]: "Custo: R$ 150,00"
+          - generic [ref=e155]:
+            - paragraph [ref=e156]: Lucro Mensal
+            - paragraph [ref=e157]: R$ -150,00
+            - paragraph [ref=e158]: —
+        - generic [ref=e133]:
+          - textbox "Buscar cliente..." [ref=e134]
+          - combobox [ref=e135]:
+            - option "Todos os servidores" [selected]
+            - option "Servidor Principal"
+          - combobox [ref=e136]:
+            - option "Todos os status" [selected]
+            - option "Ativo"
+            - option "Suspenso"
+            - option "Cancelado"
+        - generic [ref=e137]:
+          - generic [ref=e139]: 0 clientes
+          - generic [ref=e159]:
+            - paragraph [ref=e160]: 📺
+            - paragraph [ref=e161]: Nenhum cliente encontrado
+      - generic [ref=e164]:
+        - generic [ref=e165]:
+          - heading "Novo Cliente IPTV" [level=2] [ref=e166]
+          - button "×" [ref=e167] [cursor=pointer]
+        - generic [ref=e169]:
+          - generic [ref=e170]:
+            - generic [ref=e171]: Nome *
+            - textbox "Nome do cliente" [ref=e172]
+          - generic [ref=e173]:
+            - generic [ref=e174]: Telefone
+            - textbox "5511999999999" [ref=e175]
+          - generic [ref=e176]:
+            - generic [ref=e177]: Email
+            - textbox "email@exemplo.com" [ref=e178]
+          - generic [ref=e179]:
+            - generic [ref=e180]: Servidor
+            - combobox [ref=e181]:
+              - option "Sem servidor" [selected]
+              - option "Servidor Principal"
+          - generic [ref=e182]:
+            - generic [ref=e183]: Plano
+            - 'textbox "Ex: Mensal, Trimestral..." [ref=e184]'
+          - generic [ref=e185]:
+            - generic [ref=e186]: Mensalidade (R$)
+            - spinbutton [ref=e187]
+          - generic [ref=e188]:
+            - generic [ref=e189]: Dia de Vencimento
+            - spinbutton [ref=e190]: "1"
+          - generic [ref=e191]:
+            - generic [ref=e192]: Status
+            - combobox [ref=e193]:
+              - option "Ativo" [selected]
+              - option "Suspenso"
+              - option "Cancelado"
+          - generic [ref=e194]:
+            - generic [ref=e195]: Observações
+            - textbox "Anotações extras..." [ref=e196]
+          - generic [ref=e197]:
+            - button "Cancelar" [ref=e198] [cursor=pointer]
+            - button "Salvar" [ref=e199] [cursor=pointer]

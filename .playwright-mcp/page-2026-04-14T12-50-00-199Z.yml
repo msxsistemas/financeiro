@@ -1,0 +1,44 @@
+- generic [ref=e2]:
+  - status [ref=e85]: Produto criado!
+  - generic [ref=e3]:
+    - button "☰" [ref=e4] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - heading "Produtos" [level=1] [ref=e11]
+            - paragraph [ref=e12]: 1 produtos
+          - button "+ Novo Produto" [ref=e13] [cursor=pointer]
+        - generic [ref=e14]:
+          - textbox "Buscar produto..." [ref=e15]
+          - combobox [ref=e16]:
+            - option "Todas categorias" [selected]
+          - generic [ref=e17] [cursor=pointer]:
+            - checkbox "Estoque baixo" [ref=e18]
+            - text: Estoque baixo
+        - table [ref=e20]:
+          - rowgroup [ref=e21]:
+            - row "Produto SKU Preço Custo Estoque Categoria" [ref=e22]:
+              - columnheader "Produto" [ref=e23]
+              - columnheader "SKU" [ref=e24]
+              - columnheader "Preço" [ref=e25]
+              - columnheader "Custo" [ref=e26]
+              - columnheader "Estoque" [ref=e27]
+              - columnheader "Categoria" [ref=e28]
+              - columnheader [ref=e29]
+          - rowgroup [ref=e30]:
+            - row "Produto Teste - R$ 50,00 R$ 0,00 10 un - 📊 📦 ✏️ 🗑️" [ref=e86]:
+              - cell "Produto Teste" [ref=e87]:
+                - button "Produto Teste" [ref=e89] [cursor=pointer]
+              - cell "-" [ref=e90]
+              - cell "R$ 50,00" [ref=e91]
+              - cell "R$ 0,00" [ref=e92]
+              - cell "10 un" [ref=e93]:
+                - generic [ref=e94]: 10 un
+              - cell "-" [ref=e95]
+              - cell "📊 📦 ✏️ 🗑️" [ref=e96]:
+                - generic [ref=e97]:
+                  - button "📊" [ref=e98] [cursor=pointer]
+                  - button "📦" [ref=e99] [cursor=pointer]
+                  - button "✏️" [ref=e100] [cursor=pointer]
+                  - button "🗑️" [ref=e101] [cursor=pointer]

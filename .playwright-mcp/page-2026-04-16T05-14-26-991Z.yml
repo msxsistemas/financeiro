@@ -1,0 +1,8 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "🎯 Metas de Economia" [level=1] [ref=e11]
+        - paragraph [ref=e12]: "0 ativas · Guardado: R$ 0,00 / R$ 0,00"
+      - button "+ Nova Meta" [ref=e13] [cursor=pointer]

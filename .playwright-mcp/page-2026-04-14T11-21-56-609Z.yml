@@ -1,0 +1,14 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "Busca Global" [level=1] [ref=e10]
+        - paragraph [ref=e11]: Pesquise em transações, dívidas e produtos
+      - generic [ref=e12]:
+        - generic [ref=e13]: 🔍
+        - textbox "Digite para buscar (mínimo 2 caracteres)..." [active] [ref=e14]
+      - generic [ref=e15]:
+        - paragraph [ref=e16]: 🔎
+        - paragraph [ref=e17]: Pesquise em todo o sistema
+        - paragraph [ref=e18]: Transações, dívidas, produtos, contatos e empréstimos

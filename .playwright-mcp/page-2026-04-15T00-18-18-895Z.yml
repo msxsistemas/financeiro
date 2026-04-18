@@ -1,0 +1,146 @@
+- generic [ref=e17]:
+  - button "☰" [ref=e18] [cursor=pointer]
+  - main [ref=e19]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - heading "Dashboard" [level=1] [ref=e25]
+          - paragraph [ref=e26]: Visão geral das suas finanças
+        - generic [ref=e27]:
+          - combobox [ref=e28]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e29]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e31]:
+        - generic [ref=e32]: ⚠️
+        - generic [ref=e33]:
+          - paragraph [ref=e34]: 1 vencimento hoje ou amanhã
+          - generic [ref=e36]: Dívida Teste · R$ 200,00
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]: Previsão de Fechamento
+          - generic [ref=e41]: 14/30 dias
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - paragraph [ref=e44]: Receita prev.
+            - paragraph [ref=e45]: R$ 214,29
+          - generic [ref=e46]:
+            - paragraph [ref=e47]: Despesa prev.
+            - paragraph [ref=e48]: R$ 0,00
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Resultado prev.
+            - paragraph [ref=e51]: R$ 214,29
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]: Receitas do Mês
+            - generic [ref=e58]: 📈
+          - paragraph [ref=e59]: R$ 100,00
+          - paragraph [ref=e61]: Concluídas
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]: Despesas do Mês
+            - generic [ref=e65]: 📉
+          - paragraph [ref=e66]: R$ 0,00
+          - paragraph [ref=e68]: Concluídas
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: Saldo
+            - generic [ref=e72]: 💰
+          - paragraph [ref=e73]: R$ 100,00
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]: Dívidas Vencidas
+            - generic [ref=e77]: ⚠️
+          - paragraph [ref=e78]: "0"
+          - paragraph [ref=e80]: Requerem atenção
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: A Pagar
+            - generic [ref=e85]: 💸
+          - paragraph [ref=e86]: R$ 200,00
+          - paragraph [ref=e88]: 1 pendentes
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: A Receber
+            - generic [ref=e92]: 💵
+          - paragraph [ref=e93]: R$ 0,00
+          - paragraph [ref=e95]: 0 pendentes
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e98]: Estoque Baixo
+            - generic [ref=e99]: 📦
+          - paragraph [ref=e100]: "0"
+          - paragraph [ref=e102]: Produtos
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]: Próx. Eventos
+            - generic [ref=e106]: 📅
+          - paragraph [ref=e107]: "0"
+          - paragraph [ref=e109]: Nos próximos dias
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - generic [ref=e113]: Empréstimos Ativos
+            - generic [ref=e114]: 🤝
+          - paragraph [ref=e115]: "1"
+          - paragraph [ref=e117]: contratos em aberto
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]: A Receber (Empréstimos)
+            - generic [ref=e121]: 💰
+          - paragraph [ref=e122]: R$ 500,00
+          - paragraph [ref=e124]: parcelas pendentes
+      - generic [ref=e125]:
+        - heading "Fluxo de Caixa — Próximos 30 dias" [level=3] [ref=e126]
+        - img [ref=e127]
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - heading "Receitas vs Despesas (6 meses)" [level=3] [ref=e130]
+          - img [ref=e131]
+        - generic [ref=e132]:
+          - heading "Despesas por Categoria" [level=3] [ref=e133]
+          - generic [ref=e134]: Sem dados para o período
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - heading "Transações Recentes" [level=3] [ref=e137]
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - generic [ref=e141]: 📈
+                - generic [ref=e142]:
+                  - paragraph [ref=e143]: "Venda: Produto Teste"
+                  - paragraph [ref=e144]: Sem categoria
+              - generic [ref=e145]: +R$ 50,00
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - generic [ref=e148]: 📈
+                - generic [ref=e149]:
+                  - paragraph [ref=e150]: "Venda: Produto Teste"
+                  - paragraph [ref=e151]: Sem categoria
+              - generic [ref=e152]: +R$ 50,00
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - generic [ref=e155]: 📈
+                - generic [ref=e156]:
+                  - paragraph [ref=e157]: Venda Teste
+                  - paragraph [ref=e158]: Sem categoria
+              - generic [ref=e159]: +R$ 150,00
+        - generic [ref=e160]:
+          - heading "Próximos Eventos" [level=3] [ref=e161]
+          - paragraph [ref=e163]: Nenhum evento próximo

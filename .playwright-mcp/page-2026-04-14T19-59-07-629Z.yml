@@ -1,0 +1,53 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Relatórios" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Análise financeira detalhada
+        - generic [ref=e13]:
+          - combobox [ref=e14]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e15]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e17]:
+        - button "📊 DRE" [ref=e18] [cursor=pointer]
+        - button "📅 Anual" [ref=e19] [cursor=pointer]
+        - button "💧 Fluxo de Caixa" [ref=e20] [cursor=pointer]
+        - button "🎯 Metas" [ref=e21] [cursor=pointer]
+        - button "📋 Planejamento" [active] [ref=e22] [cursor=pointer]
+        - button "🏦 Patrimônio" [ref=e23] [cursor=pointer]
+        - button "📦 Produtos" [ref=e24] [cursor=pointer]
+      - generic [ref=e163]:
+        - generic [ref=e164]:
+          - heading "Meta de Receita — Abr/2026" [level=3] [ref=e165]
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - generic [ref=e168]: Meta mensal (R$)
+              - spinbutton [ref=e169]
+            - button "Salvar Meta" [ref=e170] [cursor=pointer]
+        - generic [ref=e171]:
+          - generic [ref=e172]:
+            - paragraph [ref=e173]: Receitas
+            - paragraph [ref=e174]: R$ 50,00
+          - generic [ref=e175]:
+            - paragraph [ref=e176]: Despesas
+            - paragraph [ref=e177]: R$ 0,00
+          - generic [ref=e178]:
+            - paragraph [ref=e179]: Resultado
+            - paragraph [ref=e180]: R$ 50,00

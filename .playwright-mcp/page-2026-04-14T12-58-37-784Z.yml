@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - status [ref=e62]: Preencha nome e valor de todas as pessoas
+  - generic [ref=e3]:
+    - button "☰" [ref=e4] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - heading "🔀 Divisão de Contas" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Divida gastos entre pessoas
+          - button "+ Nova Divisão" [ref=e13] [cursor=pointer]
+        - generic [ref=e14]:
+          - paragraph [ref=e16]: 🔀
+          - paragraph [ref=e17]: Nenhuma divisão criada
+          - paragraph [ref=e18]: Crie uma divisão para rastrear contas compartilhadas
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - heading "Nova Divisão de Conta" [level=2] [ref=e23]
+            - button "×" [ref=e24] [cursor=pointer]
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - generic [ref=e29]: Descrição *
+                - 'textbox "Ex: Jantar no restaurante, Viagem..." [ref=e30]': Jantar Teste
+              - generic [ref=e31]:
+                - generic [ref=e32]: Valor total (R$) *
+                - spinbutton [ref=e33]: "120"
+              - generic [ref=e34]:
+                - generic [ref=e35]: Observações
+                - textbox "Opcional" [ref=e36]
+            - generic [ref=e37]:
+              - generic [ref=e38]:
+                - generic [ref=e39]: Pessoas *
+                - generic [ref=e40]:
+                  - button "÷ Dividir igualmente" [ref=e41] [cursor=pointer]
+                  - button "+ Pessoa" [ref=e42] [cursor=pointer]
+              - generic [ref=e44]:
+                - textbox "Nome" [ref=e45]: Maria
+                - textbox "Telefone" [ref=e46]
+                - spinbutton [ref=e47]
+              - generic [ref=e54]:
+                - generic [ref=e55]: "Distribuído: R$ 0,00"
+                - generic [ref=e56]: "Diferença: R$ 120,00"
+            - generic [ref=e48] [cursor=pointer]:
+              - checkbox "Criar dívidas a receber para cada pessoa com telefone" [ref=e49]
+              - generic [ref=e50]: Criar dívidas a receber para cada pessoa com telefone
+            - generic [ref=e51]:
+              - button "Cancelar" [ref=e52] [cursor=pointer]
+              - button "Criar Divisão" [active] [ref=e53] [cursor=pointer]

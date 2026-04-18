@@ -1,0 +1,55 @@
+- generic [ref=e2]:
+  - status [ref=e88]: Empréstimo criado!
+  - generic [ref=e3]:
+    - button "☰" [ref=e4] [cursor=pointer]
+    - main [ref=e5]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - heading "Empréstimos" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Controle de crédito pessoal com juros e cobranças automáticas
+          - button "+ Novo Empréstimo" [ref=e13] [cursor=pointer]
+        - generic [ref=e14]:
+          - button "Ativo" [ref=e15] [cursor=pointer]
+          - button "Quitado" [ref=e16] [cursor=pointer]
+          - button "Inadimplente" [ref=e17] [cursor=pointer]
+        - generic [ref=e18]:
+          - generic [ref=e90]:
+            - generic [ref=e91] [cursor=pointer]:
+              - generic [ref=e92]:
+                - generic [ref=e93]: Cliente Teste
+                - generic [ref=e94]: Ativo
+              - generic [ref=e95]:
+                - generic [ref=e96]:
+                  - text: "Principal:"
+                  - strong [ref=e97]: R$ 500,00
+                - generic [ref=e98]:
+                  - text: "Juros:"
+                  - strong [ref=e99]: 0.0000% mensal (simples)
+                - generic [ref=e100]:
+                  - text: "Parcelas:"
+                  - strong [ref=e101]: 0/1
+                - generic [ref=e102]:
+                  - text: "Próx. venc.:"
+                  - strong [ref=e103]: Invalid Date
+            - generic [ref=e104]:
+              - generic [ref=e105]: R$ 500,00
+              - generic [ref=e106]: em aberto
+          - generic [ref=e108]:
+            - generic [ref=e109] [cursor=pointer]:
+              - generic [ref=e110]:
+                - generic [ref=e111]: Cliente Teste
+                - generic [ref=e112]: Ativo
+              - generic [ref=e113]:
+                - generic [ref=e114]:
+                  - text: "Principal:"
+                  - strong [ref=e115]: R$ 500,00
+                - generic [ref=e116]:
+                  - text: "Juros:"
+                  - strong [ref=e117]: 0.0000% mensal (simples)
+                - generic [ref=e118]:
+                  - text: "Parcelas:"
+                  - strong [ref=e119]: 0/0
+            - generic [ref=e120]:
+              - generic [ref=e121]: R$ 0,00
+              - generic [ref=e122]: em aberto

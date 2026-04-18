@@ -1,0 +1,90 @@
+- generic [ref=e31]:
+  - button "☰" [ref=e32] [cursor=pointer]
+  - main [ref=e33]:
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - heading "Dashboard" [level=1] [ref=e39]
+          - paragraph [ref=e40]: Visão geral das suas finanças
+        - generic [ref=e41]:
+          - combobox [ref=e42]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e43]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]: Receitas do Mês
+            - generic [ref=e48]: 📈
+          - paragraph [ref=e49]: R$ 0,00
+          - paragraph [ref=e50]: Concluídas
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - generic [ref=e53]: Despesas do Mês
+            - generic [ref=e54]: 📉
+          - paragraph [ref=e55]: R$ 0,00
+          - paragraph [ref=e56]: Concluídas
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]: Saldo
+            - generic [ref=e60]: 💰
+          - paragraph [ref=e61]: R$ 0,00
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]: Dívidas Vencidas
+            - generic [ref=e65]: ⚠️
+          - paragraph [ref=e66]: "0"
+          - paragraph [ref=e67]: Requerem atenção
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: A Pagar
+            - generic [ref=e72]: 💸
+          - paragraph [ref=e73]: R$ 0,00
+          - paragraph [ref=e74]: 0 pendentes
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e77]: A Receber
+            - generic [ref=e78]: 💵
+          - paragraph [ref=e79]: R$ 0,00
+          - paragraph [ref=e80]: 0 pendentes
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]: Estoque Baixo
+            - generic [ref=e84]: 📦
+          - paragraph [ref=e85]: "0"
+          - paragraph [ref=e86]: Produtos
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: Próx. Eventos
+            - generic [ref=e90]: 📅
+          - paragraph [ref=e91]: "0"
+          - paragraph [ref=e92]: Nos próximos dias
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - heading "Receitas vs Despesas (6 meses)" [level=3] [ref=e95]
+          - img [ref=e96]
+        - generic [ref=e97]:
+          - heading "Despesas por Categoria" [level=3] [ref=e98]
+          - generic [ref=e99]: Sem dados para o período
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - heading "Transações Recentes" [level=3] [ref=e102]
+          - paragraph [ref=e104]: Nenhuma transação
+        - generic [ref=e105]:
+          - heading "Próximos Eventos" [level=3] [ref=e106]
+          - paragraph [ref=e108]: Nenhum evento próximo

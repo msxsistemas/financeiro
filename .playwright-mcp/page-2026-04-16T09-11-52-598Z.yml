@@ -1,0 +1,77 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: 💎
+        - generic [ref=e8]: Financeiro
+      - button "←" [ref=e9] [cursor=pointer]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: Administrador
+        - paragraph [ref=e13]: admin@financeiro.com
+      - button "🔔" [ref=e15] [cursor=pointer]
+    - navigation [ref=e16]:
+      - link "📊 Dashboard" [ref=e17] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e18]: 📊
+        - generic [ref=e19]: Dashboard
+      - link "💰 Transações" [ref=e20] [cursor=pointer]:
+        - /url: /transactions
+        - generic [ref=e21]: 💰
+        - generic [ref=e22]: Transações
+      - link "📋 Dívidas" [ref=e23] [cursor=pointer]:
+        - /url: /debts
+        - generic [ref=e24]: 📋
+        - generic [ref=e25]: Dívidas
+      - link "📺 IPTV" [ref=e26] [cursor=pointer]:
+        - /url: /iptv
+        - generic [ref=e27]: 📺
+        - generic [ref=e28]: IPTV
+      - link "📈 Relatórios" [ref=e29] [cursor=pointer]:
+        - /url: /reports
+        - generic [ref=e30]: 📈
+        - generic [ref=e31]: Relatórios
+      - link "📅 Agenda" [ref=e32] [cursor=pointer]:
+        - /url: /calendar
+        - generic [ref=e33]: 📅
+        - generic [ref=e34]: Agenda
+      - link "💬 WhatsApp" [ref=e35] [cursor=pointer]:
+        - /url: /whatsapp
+        - generic [ref=e36]: 💬
+        - generic [ref=e37]: WhatsApp
+      - link "👥 Contatos" [ref=e38] [cursor=pointer]:
+        - /url: /contacts
+        - generic [ref=e39]: 👥
+        - generic [ref=e40]: Contatos
+      - link "🎯 Metas" [ref=e41] [cursor=pointer]:
+        - /url: /goals
+        - generic [ref=e42]: 🎯
+        - generic [ref=e43]: Metas
+      - link "🤝 Empréstimos" [ref=e44] [cursor=pointer]:
+        - /url: /loans
+        - generic [ref=e45]: 🤝
+        - generic [ref=e46]: Empréstimos
+      - link "⚠️ Inadimplentes" [ref=e47] [cursor=pointer]:
+        - /url: /delinquents
+        - generic [ref=e48]: ⚠️
+        - generic [ref=e49]: Inadimplentes
+      - link "📩 Log WhatsApp" [ref=e50] [cursor=pointer]:
+        - /url: /whatsapp-log
+        - generic [ref=e51]: 📩
+        - generic [ref=e52]: Log WhatsApp
+      - link "🕒 Histórico" [ref=e53] [cursor=pointer]:
+        - /url: /history
+        - generic [ref=e54]: 🕒
+        - generic [ref=e55]: Histórico
+      - link "⚙️ Configurações" [ref=e56] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e57]: ⚙️
+        - generic [ref=e58]: Configurações
+    - generic [ref=e59]:
+      - button "🌙 Modo escuro" [ref=e60] [cursor=pointer]:
+        - generic [ref=e61]: 🌙
+        - generic [ref=e62]: Modo escuro
+      - button "🚪 Sair" [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: 🚪
+        - generic [ref=e65]: Sair
+  - main [ref=e66]

@@ -1,0 +1,117 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Relatórios" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Análise financeira detalhada
+        - generic [ref=e13]:
+          - combobox [ref=e14]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e15]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e17]:
+        - button "📊 DRE" [ref=e18] [cursor=pointer]
+        - button "📅 Anual" [active] [ref=e19] [cursor=pointer]
+        - button "💧 Fluxo de Caixa" [ref=e20] [cursor=pointer]
+        - button "🎯 Metas" [ref=e21] [cursor=pointer]
+        - button "📋 Planejamento" [ref=e22] [cursor=pointer]
+        - button "🏦 Patrimônio" [ref=e23] [cursor=pointer]
+        - button "📦 Produtos" [ref=e24] [cursor=pointer]
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - paragraph [ref=e56]: Total Receitas 2026
+            - paragraph [ref=e57]: R$ 50,00
+          - generic [ref=e58]:
+            - paragraph [ref=e59]: Total Despesas 2026
+            - paragraph [ref=e60]: R$ 0,00
+          - generic [ref=e61]:
+            - paragraph [ref=e62]: Resultado 2026
+            - paragraph [ref=e63]: R$ 50,00
+        - generic [ref=e64]:
+          - heading "Receitas vs Despesas — 2026" [level=3] [ref=e65]
+          - img [ref=e66]
+        - table [ref=e68]:
+          - rowgroup [ref=e69]:
+            - row "Mês Receitas Despesas Resultado" [ref=e70]:
+              - columnheader "Mês" [ref=e71]
+              - columnheader "Receitas" [ref=e72]
+              - columnheader "Despesas" [ref=e73]
+              - columnheader "Resultado" [ref=e74]
+          - rowgroup [ref=e75]:
+            - row "jan. - - -" [ref=e76]:
+              - cell "jan." [ref=e77]
+              - cell "-" [ref=e78]
+              - cell "-" [ref=e79]
+              - cell "-" [ref=e80]
+            - row "fev. - - -" [ref=e81]:
+              - cell "fev." [ref=e82]
+              - cell "-" [ref=e83]
+              - cell "-" [ref=e84]
+              - cell "-" [ref=e85]
+            - row "mar. - - -" [ref=e86]:
+              - cell "mar." [ref=e87]
+              - cell "-" [ref=e88]
+              - cell "-" [ref=e89]
+              - cell "-" [ref=e90]
+            - row "abr. R$ 50,00 - R$ 50,00" [ref=e91]:
+              - cell "abr." [ref=e92]
+              - cell "R$ 50,00" [ref=e93]
+              - cell "-" [ref=e94]
+              - cell "R$ 50,00" [ref=e95]
+            - row "mai. - - -" [ref=e96]:
+              - cell "mai." [ref=e97]
+              - cell "-" [ref=e98]
+              - cell "-" [ref=e99]
+              - cell "-" [ref=e100]
+            - row "jun. - - -" [ref=e101]:
+              - cell "jun." [ref=e102]
+              - cell "-" [ref=e103]
+              - cell "-" [ref=e104]
+              - cell "-" [ref=e105]
+            - row "jul. - - -" [ref=e106]:
+              - cell "jul." [ref=e107]
+              - cell "-" [ref=e108]
+              - cell "-" [ref=e109]
+              - cell "-" [ref=e110]
+            - row "ago. - - -" [ref=e111]:
+              - cell "ago." [ref=e112]
+              - cell "-" [ref=e113]
+              - cell "-" [ref=e114]
+              - cell "-" [ref=e115]
+            - row "set. - - -" [ref=e116]:
+              - cell "set." [ref=e117]
+              - cell "-" [ref=e118]
+              - cell "-" [ref=e119]
+              - cell "-" [ref=e120]
+            - row "out. - - -" [ref=e121]:
+              - cell "out." [ref=e122]
+              - cell "-" [ref=e123]
+              - cell "-" [ref=e124]
+              - cell "-" [ref=e125]
+            - row "nov. - - -" [ref=e126]:
+              - cell "nov." [ref=e127]
+              - cell "-" [ref=e128]
+              - cell "-" [ref=e129]
+              - cell "-" [ref=e130]
+            - row "dez. - - -" [ref=e131]:
+              - cell "dez." [ref=e132]
+              - cell "-" [ref=e133]
+              - cell "-" [ref=e134]
+              - cell "-" [ref=e135]

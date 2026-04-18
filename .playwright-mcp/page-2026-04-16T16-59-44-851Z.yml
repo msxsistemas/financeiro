@@ -1,0 +1,71 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e76]:
+        - heading "IPTV" [level=1] [ref=e77]
+        - paragraph [ref=e78]: Servidores, revendas e clientes
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - paragraph [ref=e81]: Servidores
+          - paragraph [ref=e82]: "2"
+        - generic [ref=e83]:
+          - paragraph [ref=e84]: Revendedores
+          - paragraph [ref=e85]: "2"
+        - generic [ref=e86]:
+          - paragraph [ref=e87]: Meus Clientes
+          - paragraph [ref=e88]: "0"
+        - generic [ref=e89]:
+          - paragraph [ref=e90]: Faturamento
+          - paragraph [ref=e91]: R$ 650,00
+          - paragraph [ref=e92]: "Custo: R$ 360,00"
+        - generic [ref=e93]:
+          - paragraph [ref=e94]: Lucro Liquido
+          - paragraph [ref=e95]: R$ 290,00
+          - paragraph [ref=e96]: 44.6% margem
+      - generic [ref=e97]:
+        - button "Servidores & Apps" [ref=e98] [cursor=pointer]
+        - button "Revendas" [ref=e99] [cursor=pointer]
+        - button "Meus Clientes" [ref=e100] [cursor=pointer]
+      - generic [ref=e137]:
+        - generic [ref=e138]:
+          - combobox [ref=e139]:
+            - option "Todos os servidores" [selected]
+            - option "GF"
+            - option "Genial"
+          - button "+ Novo Revendedor" [ref=e140] [cursor=pointer]
+        - table [ref=e142]:
+          - rowgroup [ref=e143]:
+            - row "Revendedor Servidor Creditos Venda/Cred Receita Lucro Acoes" [ref=e144]:
+              - columnheader "Revendedor" [ref=e145]
+              - columnheader "Servidor" [ref=e146]
+              - columnheader "Creditos" [ref=e147]
+              - columnheader "Venda/Cred" [ref=e148]
+              - columnheader "Receita" [ref=e149]
+              - columnheader "Lucro" [ref=e150]
+              - columnheader "Acoes" [ref=e151]
+          - rowgroup [ref=e152]:
+            - row "Hiao 45353534535 Genial 10 R$ 15,00 R$ 150,00 R$ 90,00 ✏️ 🗑️" [ref=e153]:
+              - cell "Hiao 45353534535" [ref=e154]:
+                - paragraph [ref=e155]: Hiao
+                - paragraph [ref=e156]: "45353534535"
+              - cell "Genial" [ref=e157]
+              - cell "10" [ref=e158]
+              - cell "R$ 15,00" [ref=e159]
+              - cell "R$ 150,00" [ref=e160]
+              - cell "R$ 90,00" [ref=e161]
+              - cell "✏️ 🗑️" [ref=e162]:
+                - button "✏️" [ref=e163] [cursor=pointer]
+                - button "🗑️" [ref=e164] [cursor=pointer]
+            - row "Michael 83921475230 GF 50 R$ 10,00 R$ 500,00 R$ 200,00 ✏️ 🗑️" [ref=e165]:
+              - cell "Michael 83921475230" [ref=e166]:
+                - paragraph [ref=e167]: Michael
+                - paragraph [ref=e168]: "83921475230"
+              - cell "GF" [ref=e169]
+              - cell "50" [ref=e170]
+              - cell "R$ 10,00" [ref=e171]
+              - cell "R$ 500,00" [ref=e172]
+              - cell "R$ 200,00" [ref=e173]
+              - cell "✏️ 🗑️" [ref=e174]:
+                - button "✏️" [ref=e175] [cursor=pointer]
+                - button "🗑️" [ref=e176] [cursor=pointer]

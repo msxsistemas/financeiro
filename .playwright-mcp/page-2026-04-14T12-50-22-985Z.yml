@@ -1,0 +1,43 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "🛒 PDV — Ponto de Venda" [level=1] [ref=e11]
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - generic [ref=e14]: 🔍
+            - textbox "Buscar produto..." [ref=e15]
+          - combobox [ref=e16]:
+            - option "Todas" [selected]
+        - 'button "1 Produto Teste R$ 50,00 Est: 10 un" [active] [ref=e45] [cursor=pointer]':
+          - generic [ref=e46]: "1"
+          - paragraph [ref=e41]: Produto Teste
+          - paragraph [ref=e42]: R$ 50,00
+          - paragraph [ref=e44]: "Est: 10 un"
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Carrinho
+          - button "Limpar" [ref=e47] [cursor=pointer]
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Produto Teste
+            - button "✕" [ref=e51] [cursor=pointer]
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - button "−" [ref=e54] [cursor=pointer]
+              - spinbutton [ref=e55]: "1"
+              - button "+" [ref=e56] [cursor=pointer]
+            - generic [ref=e57]: ×
+            - spinbutton [ref=e58]: "50"
+            - generic [ref=e59]: R$ 50,00
+        - generic [ref=e29]:
+          - textbox "👤 Cliente (opcional)" [ref=e31]
+          - textbox "📝 Observações (opcional)" [ref=e32]
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: 1 item
+            - generic [ref=e36]: R$ 50,00
+          - generic [ref=e37]:
+            - button "📋 Orçamento" [ref=e38] [cursor=pointer]
+            - button "✅ Vender" [ref=e39] [cursor=pointer]

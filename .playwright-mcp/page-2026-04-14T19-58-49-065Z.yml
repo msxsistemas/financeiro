@@ -1,0 +1,52 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Relatórios" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Análise financeira detalhada
+        - generic [ref=e13]:
+          - combobox [ref=e14]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e15]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e17]:
+        - button "📊 DRE" [ref=e18] [cursor=pointer]
+        - button "📅 Anual" [ref=e19] [cursor=pointer]
+        - button "💧 Fluxo de Caixa" [active] [ref=e20] [cursor=pointer]
+        - button "🎯 Metas" [ref=e21] [cursor=pointer]
+        - button "📋 Planejamento" [ref=e22] [cursor=pointer]
+        - button "🏦 Patrimônio" [ref=e23] [cursor=pointer]
+        - button "📦 Produtos" [ref=e24] [cursor=pointer]
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - paragraph [ref=e139]: Saldo Atual
+            - paragraph [ref=e140]: R$ 0,00
+          - generic [ref=e141]:
+            - paragraph [ref=e142]: Saldo Projetado (60 dias)
+            - paragraph [ref=e143]: R$ 200,00
+        - generic [ref=e144]:
+          - heading "Projeção de saldo — próximos 60 dias" [level=3] [ref=e145]
+          - img [ref=e146]
+        - generic [ref=e147]:
+          - heading "Eventos de caixa" [level=3] [ref=e149]
+          - generic [ref=e151]:
+            - generic [ref=e152]: 14/04/2026
+            - generic [ref=e153]: +R$ 200,00
+            - generic [ref=e154]: R$ 200,00

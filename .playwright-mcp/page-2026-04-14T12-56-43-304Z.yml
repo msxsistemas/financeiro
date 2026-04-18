@@ -1,0 +1,77 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Empréstimos" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Controle de crédito pessoal com juros e cobranças automáticas
+        - button "+ Novo Empréstimo" [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - button "Ativo" [ref=e15] [cursor=pointer]
+        - button "Quitado" [ref=e16] [cursor=pointer]
+        - button "Inadimplente" [ref=e17] [cursor=pointer]
+      - generic [ref=e18]:
+        - generic [ref=e21]:
+          - generic [ref=e22] [cursor=pointer]:
+            - generic [ref=e23]:
+              - generic [ref=e24]: Cliente Teste
+              - generic [ref=e25]: Ativo
+            - generic [ref=e26]:
+              - generic [ref=e27]:
+                - text: "Principal:"
+                - strong [ref=e28]: R$ 500,00
+              - generic [ref=e29]:
+                - text: "Juros:"
+                - strong [ref=e30]: 0.0000% mensal (simples)
+              - generic [ref=e31]:
+                - text: "Parcelas:"
+                - strong [ref=e32]: 0/1
+              - generic [ref=e33]:
+                - text: "Próx. venc.:"
+                - strong [ref=e34]: 14/05/2026
+          - generic [ref=e35]:
+            - generic [ref=e36]: R$ 500,00
+            - generic [ref=e37]: em aberto
+        - generic [ref=e39]:
+          - generic [ref=e40] [cursor=pointer]:
+            - generic [ref=e41]:
+              - generic [ref=e42]: Cliente Teste
+              - generic [ref=e43]: Ativo
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - text: "Principal:"
+                - strong [ref=e46]: R$ 500,00
+              - generic [ref=e47]:
+                - text: "Juros:"
+                - strong [ref=e48]: 0.0000% mensal (simples)
+              - generic [ref=e49]:
+                - text: "Parcelas:"
+                - strong [ref=e50]: 0/0
+          - generic [ref=e51]:
+            - generic [ref=e52]: R$ 0,00
+            - generic [ref=e53]: em aberto
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - heading "Empréstimo — Cliente Teste" [level=2] [ref=e58]
+          - button "×" [ref=e59] [cursor=pointer]
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - generic [ref=e63]:
+              - generic [ref=e64]: Principal
+              - generic [ref=e65]: R$ 500,00
+            - generic [ref=e66]:
+              - generic [ref=e67]: Juros
+              - generic [ref=e68]: 0.0000% / Mensal
+              - generic [ref=e69]: Simples
+            - generic [ref=e70]:
+              - generic [ref=e71]: Mora
+              - generic [ref=e72]: 0.0000% / período
+          - generic [ref=e73]:
+            - button "⚡ Aplicar Mora" [ref=e74] [cursor=pointer]
+            - button "📲 Cobrar Vencidas" [ref=e75] [cursor=pointer]
+            - button "Inadimplente" [ref=e76] [cursor=pointer]
+          - heading "Parcelas" [level=3] [ref=e78]
+          - generic [ref=e79]:
+            - button "Excluir" [ref=e80] [cursor=pointer]
+            - button "Marcar Quitado" [ref=e81] [cursor=pointer]

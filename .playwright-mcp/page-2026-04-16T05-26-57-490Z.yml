@@ -1,0 +1,37 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Relatórios" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Análise financeira detalhada
+        - generic [ref=e13]:
+          - combobox [ref=e14]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e15]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+          - button "📄 Exportar PDF" [ref=e16] [cursor=pointer]
+      - generic [ref=e17]:
+        - button "📊 DRE" [ref=e18] [cursor=pointer]
+        - button "📅 Anual" [ref=e19] [cursor=pointer]
+        - button "🧾 Fiscal" [ref=e20] [cursor=pointer]
+        - button "💧 Fluxo de Caixa" [ref=e21] [cursor=pointer]
+        - button "🎯 Metas" [ref=e22] [cursor=pointer]
+        - button "📋 Planejamento" [ref=e23] [cursor=pointer]
+        - button "🏦 Patrimônio" [ref=e24] [cursor=pointer]
+        - button "📦 Produtos" [ref=e25] [cursor=pointer]

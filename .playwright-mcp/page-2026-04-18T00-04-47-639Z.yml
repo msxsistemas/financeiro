@@ -1,0 +1,109 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - complementary [ref=e283]:
+    - generic [ref=e284]:
+      - generic [ref=e285]:
+        - generic [ref=e286]: 💎
+        - generic [ref=e287]: Financeiro
+      - button "✕" [ref=e288] [cursor=pointer]
+    - navigation [ref=e289]:
+      - link "📊 Dashboard" [ref=e344] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e345]: 📊
+        - generic [ref=e346]: Dashboard
+      - generic [ref=e347]:
+        - button "📋 Dívidas ▾" [ref=e348] [cursor=pointer]:
+          - generic [ref=e349]: 📋
+          - generic [ref=e350]: Dívidas
+          - generic [ref=e351]: ▾
+        - generic [ref=e352]:
+          - button "A Pagar" [ref=e353] [cursor=pointer]:
+            - generic [ref=e355]: A Pagar
+          - button "A Receber" [ref=e356] [cursor=pointer]:
+            - generic [ref=e358]: A Receber
+      - generic [ref=e359]:
+        - button "📺 IPTV ▾" [ref=e360] [cursor=pointer]:
+          - generic [ref=e361]: 📺
+          - generic [ref=e362]: IPTV
+          - generic [ref=e363]: ▾
+        - generic [ref=e364]:
+          - button "Servidores & Apps" [ref=e365] [cursor=pointer]:
+            - generic [ref=e367]: Servidores & Apps
+          - button "Revendas" [ref=e368] [cursor=pointer]:
+            - generic [ref=e370]: Revendas
+          - button "Meus Clientes" [ref=e371] [cursor=pointer]:
+            - generic [ref=e373]: Meus Clientes
+          - button "Dívidas" [ref=e374] [cursor=pointer]:
+            - generic [ref=e376]: Dívidas
+      - link "📈 Relatórios" [ref=e377] [cursor=pointer]:
+        - /url: /reports
+        - generic [ref=e378]: 📈
+        - generic [ref=e379]: Relatórios
+      - link "📅 Agenda" [ref=e380] [cursor=pointer]:
+        - /url: /calendar
+        - generic [ref=e381]: 📅
+        - generic [ref=e382]: Agenda
+      - link "💬 WhatsApp" [ref=e383] [cursor=pointer]:
+        - /url: /whatsapp
+        - generic [ref=e384]: 💬
+        - generic [ref=e385]: WhatsApp
+      - link "👥 Contatos" [ref=e386] [cursor=pointer]:
+        - /url: /contacts
+        - generic [ref=e387]: 👥
+        - generic [ref=e388]: Contatos
+      - link "🎯 Metas" [ref=e389] [cursor=pointer]:
+        - /url: /goals
+        - generic [ref=e390]: 🎯
+        - generic [ref=e391]: Metas
+      - link "🤝 Empréstimos" [ref=e392] [cursor=pointer]:
+        - /url: /loans
+        - generic [ref=e393]: 🤝
+        - generic [ref=e394]: Empréstimos
+      - link "⚠️ Inadimplentes" [ref=e395] [cursor=pointer]:
+        - /url: /delinquents
+        - generic [ref=e396]: ⚠️
+        - generic [ref=e397]: Inadimplentes
+      - link "📩 Log WhatsApp" [ref=e398] [cursor=pointer]:
+        - /url: /whatsapp-log
+        - generic [ref=e399]: 📩
+        - generic [ref=e400]: Log WhatsApp
+      - link "⚙️ Configurações" [ref=e401] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e402]: ⚙️
+        - generic [ref=e403]: Configurações
+    - generic [ref=e337]:
+      - button "🌙 Modo escuro" [ref=e338] [cursor=pointer]:
+        - generic [ref=e339]: 🌙
+        - generic [ref=e340]: Modo escuro
+      - button "🚪 Sair" [ref=e341] [cursor=pointer]:
+        - generic [ref=e342]: 🚪
+        - generic [ref=e343]: Sair
+  - main [ref=e5]:
+    - generic [ref=e250]:
+      - generic [ref=e251]:
+        - generic [ref=e252]:
+          - heading "Dívidas" [level=1] [ref=e253]
+          - paragraph [ref=e254]: 1 registros
+        - generic [ref=e255]:
+          - button "📥 CSV" [ref=e256] [cursor=pointer]
+          - button "+ Nova Dívida" [ref=e257] [cursor=pointer]
+      - generic [ref=e258]:
+        - button "Todos" [ref=e259] [cursor=pointer]
+        - button "Pendente" [ref=e260] [cursor=pointer]
+        - button "Parcial" [ref=e261] [cursor=pointer]
+        - button "Vencido" [ref=e262] [cursor=pointer]
+        - button "Pago" [ref=e263] [cursor=pointer]
+      - generic [ref=e265]:
+        - generic [ref=e266]:
+          - generic [ref=e268]:
+            - heading "Dívida Teste" [level=3] [ref=e269]
+            - generic [ref=e270]: Pago
+          - generic [ref=e271]:
+            - paragraph [ref=e272]: R$ 0,00
+            - paragraph [ref=e273]: de R$ 200,00
+        - generic [ref=e274]:
+          - button "Ver detalhes" [ref=e275] [cursor=pointer]
+          - button "📄 PDF" [ref=e276] [cursor=pointer]
+          - button "✏️ Editar" [ref=e277] [cursor=pointer]
+          - button "🗑️" [ref=e278] [cursor=pointer]
+      - paragraph [ref=e280]: — 1 registros —

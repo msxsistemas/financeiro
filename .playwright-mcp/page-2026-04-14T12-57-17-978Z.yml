@@ -1,0 +1,63 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "🎯 Metas de Economia" [level=1] [ref=e11]
+          - paragraph [ref=e12]: "0 ativas · Guardado: R$ 0,00 / R$ 0,00"
+        - button "+ Nova Meta" [active] [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - paragraph [ref=e16]: 🎯
+        - paragraph [ref=e17]: Nenhuma meta criada
+        - paragraph [ref=e18]: Defina objetivos financeiros com prazos e acompanhe o progresso
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - heading "Nova Meta de Economia" [level=2] [ref=e23]
+          - button "×" [ref=e24] [cursor=pointer]
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: Nome *
+            - 'textbox "Ex: Viagem para Europa, Entrada do apartamento..." [ref=e29]'
+          - generic [ref=e30]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: Valor alvo (R$) *
+              - spinbutton [ref=e33]
+            - generic [ref=e34]:
+              - generic [ref=e35]: Já guardei (R$)
+              - spinbutton [ref=e36]
+          - generic [ref=e37]:
+            - generic [ref=e38]: Prazo
+            - textbox [ref=e39]
+          - generic [ref=e40]:
+            - generic [ref=e41]: Ícone
+            - generic [ref=e42]:
+              - button "🎯" [ref=e43] [cursor=pointer]
+              - button "🏠" [ref=e44] [cursor=pointer]
+              - button "✈️" [ref=e45] [cursor=pointer]
+              - button "🚗" [ref=e46] [cursor=pointer]
+              - button "💍" [ref=e47] [cursor=pointer]
+              - button "🎓" [ref=e48] [cursor=pointer]
+              - button "💻" [ref=e49] [cursor=pointer]
+              - button "📱" [ref=e50] [cursor=pointer]
+              - button "🏖️" [ref=e51] [cursor=pointer]
+              - button "💰" [ref=e52] [cursor=pointer]
+              - button "🛡️" [ref=e53] [cursor=pointer]
+              - button "🎁" [ref=e54] [cursor=pointer]
+          - generic [ref=e55]:
+            - generic [ref=e56]: Cor
+            - generic [ref=e57]:
+              - button [ref=e58] [cursor=pointer]
+              - button [ref=e59] [cursor=pointer]
+              - button [ref=e60] [cursor=pointer]
+              - button [ref=e61] [cursor=pointer]
+              - button [ref=e62] [cursor=pointer]
+              - button [ref=e63] [cursor=pointer]
+              - button [ref=e64] [cursor=pointer]
+              - button [ref=e65] [cursor=pointer]
+          - generic [ref=e66]:
+            - generic [ref=e67]: Observações
+            - textbox "Opcional" [ref=e68]
+          - generic [ref=e69]:
+            - button "Cancelar" [ref=e70] [cursor=pointer]
+            - button "Criar" [ref=e71] [cursor=pointer]

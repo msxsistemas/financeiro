@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "📺 IPTV" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Gerenciamento de servidores e clientes
+        - generic [ref=e13]:
+          - button "+ Novo Servidor" [ref=e14] [cursor=pointer]
+          - button "+ Novo Cliente" [ref=e15] [cursor=pointer]
+      - generic [ref=e16]:
+        - button "📊 Consolidado" [ref=e17] [cursor=pointer]
+        - button "📺 Por Servidor" [active] [ref=e18] [cursor=pointer]
+        - button "⚙️ Servidores" [ref=e19] [cursor=pointer]
+      - generic [ref=e271]:
+        - button "Servidor Principal" [ref=e273] [cursor=pointer]
+        - generic [ref=e274]:
+          - generic [ref=e275]:
+            - paragraph [ref=e276]: Clientes Ativos
+            - paragraph [ref=e277]: "1"
+          - generic [ref=e278]:
+            - paragraph [ref=e279]: Valor do Crédito
+            - paragraph [ref=e280]: R$ 35,00
+            - paragraph [ref=e281]: Carteira ativa
+          - generic [ref=e282]:
+            - paragraph [ref=e283]: Faturamento Mensal
+            - paragraph [ref=e284]: R$ 35,00
+            - paragraph [ref=e285]: "Custo: R$ 150,00"
+          - generic [ref=e286]:
+            - paragraph [ref=e287]: Lucro Mensal
+            - paragraph [ref=e288]: R$ -115,00
+            - paragraph [ref=e289]: "-328.6% margem"
+        - generic [ref=e290]:
+          - generic [ref=e291]:
+            - generic [ref=e292]: 1 clientes neste servidor
+            - button "+ Adicionar cliente" [ref=e293] [cursor=pointer]
+          - table [ref=e295]:
+            - rowgroup [ref=e296]:
+              - row "Nome Plano Mensalidade Status Ações" [ref=e297]:
+                - columnheader "Nome" [ref=e298]
+                - columnheader "Plano" [ref=e299]
+                - columnheader "Mensalidade" [ref=e300]
+                - columnheader "Status" [ref=e301]
+                - columnheader "Ações" [ref=e302]
+            - rowgroup [ref=e303]:
+              - row "João Silva 5511999990001 Mensal R$ 35,00 Ativo ✏️ 🗑️" [ref=e304]:
+                - cell "João Silva 5511999990001" [ref=e305]:
+                  - paragraph [ref=e306]: João Silva
+                  - paragraph [ref=e307]: "5511999990001"
+                - cell "Mensal" [ref=e308]
+                - cell "R$ 35,00" [ref=e309]
+                - cell "Ativo" [ref=e310]
+                - cell "✏️ 🗑️" [ref=e311]:
+                  - button "✏️" [ref=e312] [cursor=pointer]
+                  - button "🗑️" [ref=e313] [cursor=pointer]

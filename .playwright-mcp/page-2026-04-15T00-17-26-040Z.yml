@@ -1,0 +1,33 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e7]
+      - heading "MSX Player" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Acesse com suas credenciais
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - img [ref=e12]
+        - text: Verificando servidor...
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Usuário
+          - generic [ref=e17]:
+            - img [ref=e18]
+            - textbox "Seu usuário" [ref=e21]
+        - generic [ref=e22]:
+          - generic [ref=e23]: Senha
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - textbox "••••••••" [ref=e28]
+            - button [ref=e29] [cursor=pointer]:
+              - img [ref=e30]
+        - button "Entrar" [disabled] [ref=e33]
+      - button "Acesso administrativo →" [ref=e35] [cursor=pointer]
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - text: "Chave:"
+        - strong [ref=e38]: 7b5e1411…
+      - generic [ref=e39]: v1.0

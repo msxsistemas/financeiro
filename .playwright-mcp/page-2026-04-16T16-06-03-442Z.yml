@@ -1,0 +1,131 @@
+- generic [ref=e3]:
+  - button "☰" [active] [ref=e4] [cursor=pointer]
+  - complementary [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: 💎
+        - generic [ref=e16]: Financeiro
+      - button "✕" [ref=e17] [cursor=pointer]
+    - navigation [ref=e18]:
+      - link "📊 Dashboard" [ref=e20] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e21]: 📊
+        - generic [ref=e22]: Dashboard
+      - link "📋 Dívidas" [ref=e24] [cursor=pointer]:
+        - /url: /debts
+        - generic [ref=e25]: 📋
+        - generic [ref=e26]: Dívidas
+      - generic [ref=e27]:
+        - link "📺 IPTV" [ref=e28] [cursor=pointer]:
+          - /url: /iptv
+          - generic [ref=e29]: 📺
+          - generic [ref=e30]: IPTV
+        - generic [ref=e31]:
+          - button "Servidores & Apps" [ref=e32] [cursor=pointer]
+          - button "Revendas" [ref=e33] [cursor=pointer]
+          - button "Meus Clientes" [ref=e34] [cursor=pointer]
+      - link "📈 Relatórios" [ref=e36] [cursor=pointer]:
+        - /url: /reports
+        - generic [ref=e37]: 📈
+        - generic [ref=e38]: Relatórios
+      - link "📅 Agenda" [ref=e40] [cursor=pointer]:
+        - /url: /calendar
+        - generic [ref=e41]: 📅
+        - generic [ref=e42]: Agenda
+      - link "💬 WhatsApp" [ref=e44] [cursor=pointer]:
+        - /url: /whatsapp
+        - generic [ref=e45]: 💬
+        - generic [ref=e46]: WhatsApp
+      - link "👥 Contatos" [ref=e48] [cursor=pointer]:
+        - /url: /contacts
+        - generic [ref=e49]: 👥
+        - generic [ref=e50]: Contatos
+      - link "🎯 Metas" [ref=e52] [cursor=pointer]:
+        - /url: /goals
+        - generic [ref=e53]: 🎯
+        - generic [ref=e54]: Metas
+      - link "🤝 Empréstimos" [ref=e56] [cursor=pointer]:
+        - /url: /loans
+        - generic [ref=e57]: 🤝
+        - generic [ref=e58]: Empréstimos
+      - link "⚠️ Inadimplentes" [ref=e60] [cursor=pointer]:
+        - /url: /delinquents
+        - generic [ref=e61]: ⚠️
+        - generic [ref=e62]: Inadimplentes
+      - link "📩 Log WhatsApp" [ref=e64] [cursor=pointer]:
+        - /url: /whatsapp-log
+        - generic [ref=e65]: 📩
+        - generic [ref=e66]: Log WhatsApp
+      - link "⚙️ Configurações" [ref=e68] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e69]: ⚙️
+        - generic [ref=e70]: Configurações
+    - generic [ref=e71]:
+      - button "🌙 Modo escuro" [ref=e72] [cursor=pointer]:
+        - generic [ref=e73]: 🌙
+        - generic [ref=e74]: Modo escuro
+      - button "🚪 Sair" [ref=e75] [cursor=pointer]:
+        - generic [ref=e76]: 🚪
+        - generic [ref=e77]: Sair
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e78]:
+        - heading "IPTV" [level=1] [ref=e79]
+        - paragraph [ref=e80]: Servidores, revendas e clientes
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - paragraph [ref=e83]: Servidores
+          - paragraph [ref=e84]: "2"
+        - generic [ref=e85]:
+          - paragraph [ref=e86]: Revendedores
+          - paragraph [ref=e87]: "2"
+        - generic [ref=e88]:
+          - paragraph [ref=e89]: Meus Clientes
+          - paragraph [ref=e90]: "0"
+        - generic [ref=e91]:
+          - paragraph [ref=e92]: Faturamento
+          - paragraph [ref=e93]: R$ 650,00
+          - paragraph [ref=e94]: "Custo: R$ 360,00"
+        - generic [ref=e95]:
+          - paragraph [ref=e96]: Lucro Liquido
+          - paragraph [ref=e97]: R$ 290,00
+          - paragraph [ref=e98]: 44.6% margem
+      - generic [ref=e99]:
+        - button "Servidores & Apps" [ref=e100] [cursor=pointer]
+        - button "Revendas" [ref=e101] [cursor=pointer]
+        - button "Meus Clientes" [ref=e102] [cursor=pointer]
+      - generic [ref=e103]:
+        - button "+ Novo Servidor" [ref=e105] [cursor=pointer]
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - heading "GF" [level=3] [ref=e109]
+              - generic [ref=e110]:
+                - button "✏️" [ref=e111] [cursor=pointer]
+                - button "🗑️" [ref=e112] [cursor=pointer]
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - paragraph [ref=e115]: "500"
+                - paragraph [ref=e116]: Clientes
+              - generic [ref=e117]:
+                - paragraph [ref=e118]: R$ 6,00
+                - paragraph [ref=e119]: Valor Credito
+            - generic [ref=e120]:
+              - generic [ref=e121]: "Receita: R$ 500,00"
+              - generic [ref=e122]: "Lucro: R$ 200,00"
+          - generic [ref=e123]:
+            - generic [ref=e124]:
+              - heading "Genial" [level=3] [ref=e125]
+              - generic [ref=e126]:
+                - button "✏️" [ref=e127] [cursor=pointer]
+                - button "🗑️" [ref=e128] [cursor=pointer]
+            - generic [ref=e129]:
+              - generic [ref=e130]:
+                - paragraph [ref=e131]: "100"
+                - paragraph [ref=e132]: Clientes
+              - generic [ref=e133]:
+                - paragraph [ref=e134]: R$ 6,00
+                - paragraph [ref=e135]: Valor Credito
+            - generic [ref=e136]:
+              - generic [ref=e137]: "Receita: R$ 150,00"
+              - generic [ref=e138]: "Lucro: R$ 90,00"
