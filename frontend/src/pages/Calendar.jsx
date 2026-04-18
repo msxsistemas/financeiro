@@ -3,10 +3,11 @@ import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import MaskedInput from '../components/MaskedInput'
+import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 import api from '../api'
 
 const defaultForm = {
-  title: '', description: '', start_date: '', end_date: '',
+  title: '', description: '', start_date: '',
   notify_whatsapp: false, notify_phone: '', reminder_minutes: 30
 }
 
@@ -19,22 +20,23 @@ export default function Calendar() {
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(defaultForm)
-  const [filters, setFilters] = useState({ start_date: '', end_date: '' })
+  const [period, setPeriod] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ page, limit: 20 })
-      if (filters.start_date) params.set('start_date', filters.start_date)
-      if (filters.end_date) params.set('end_date', filters.end_date)
+      const params = new URLSearchParams({ page, limit: 50 })
+      const range = periodRange(period)
+      if (range.start_date) params.set('start_date', range.start_date)
+      if (range.end_date) params.set('end_date', range.end_date)
       const { data } = await api.get(`/api/calendar?${params}`)
       setItems(data.data)
       setTotal(data.total)
       setPages(data.pages)
     } catch { toast.error('Erro ao carregar agendamentos') }
     finally { setLoading(false) }
-  }, [page, filters])
+  }, [page, period])
 
   useEffect(() => { load() }, [load])
 
@@ -49,7 +51,6 @@ export default function Calendar() {
     setForm({
       title: item.title, description: item.description || '',
       start_date: new Date(item.start_date).toISOString().slice(0, 16),
-      end_date: item.end_date ? new Date(item.end_date).toISOString().slice(0, 16) : '',
       notify_whatsapp: item.notify_whatsapp || false,
       notify_phone: item.notify_phone || '',
       reminder_minutes: item.reminder_minutes || 30
@@ -60,11 +61,12 @@ export default function Calendar() {
   const handleSave = async () => {
     if (!form.title || !form.start_date) return toast.error('Título e data são obrigatórios')
     try {
+      const payload = { ...form, end_date: null }
       if (editing) {
-        await api.put(`/api/calendar/${editing.id}`, form)
+        await api.put(`/api/calendar/${editing.id}`, payload)
         toast.success('Agendamento atualizado!')
       } else {
-        await api.post('/api/calendar', form)
+        await api.post('/api/calendar', payload)
         toast.success('Agendamento criado!')
       }
       setModal(false); load()
@@ -102,7 +104,6 @@ export default function Calendar() {
           </div>
           <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
             {start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            {event.end_date && ` - ${new Date(event.end_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
           </p>
           {event.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{event.description}</p>}
           {event.notify_whatsapp && event.notify_phone && (
@@ -129,24 +130,7 @@ export default function Calendar() {
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">De:</label>
-          <input type="date" value={filters.start_date} onChange={e => setFilters(p => ({ ...p, start_date: e.target.value }))}
-            className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Até:</label>
-          <input type="date" value={filters.end_date} onChange={e => setFilters(p => ({ ...p, end_date: e.target.value }))}
-            className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-        {(filters.start_date || filters.end_date) && (
-          <button onClick={() => setFilters({ start_date: '', end_date: '' })} className="text-sm text-gray-400 dark:text-gray-500 hover:text-red-500">
-            ✕ Limpar filtros
-          </button>
-        )}
-      </div>
+      <PeriodFilter value={period} onChange={setPeriod} />
 
       {loading && <div className="flex items-center justify-center h-40"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>}
 
@@ -188,17 +172,10 @@ export default function Calendar() {
               className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Ex: pagamento, consulta, compromisso..." />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data e hora início *</label>
-              <input type="datetime-local" value={form.start_date} onChange={e => f('start_date', e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data e hora fim</label>
-              <input type="datetime-local" value={form.end_date} onChange={e => f('end_date', e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data e hora *</label>
+            <input type="datetime-local" value={form.start_date} onChange={e => f('start_date', e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
