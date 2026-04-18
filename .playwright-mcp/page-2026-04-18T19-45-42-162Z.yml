@@ -1,0 +1,161 @@
+- generic [ref=e17]:
+  - button "☰" [ref=e18] [cursor=pointer]
+  - main [ref=e19]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - heading "Dashboard" [level=1] [ref=e25]
+          - paragraph [ref=e26]: Visão geral das suas finanças
+        - generic [ref=e27]:
+          - combobox [ref=e28]:
+            - option "Jan"
+            - option "Fev"
+            - option "Mar"
+            - option "Abr" [selected]
+            - option "Mai"
+            - option "Jun"
+            - option "Jul"
+            - option "Ago"
+            - option "Set"
+            - option "Out"
+            - option "Nov"
+            - option "Dez"
+          - combobox [ref=e29]:
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: Previsão de Fechamento
+          - generic [ref=e34]: 18/30 dias
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - paragraph [ref=e37]: Receita prev.
+            - paragraph [ref=e38]: R$ 250,00
+          - generic [ref=e39]:
+            - paragraph [ref=e40]: Despesa prev.
+            - paragraph [ref=e41]: R$ 33,33
+          - generic [ref=e42]:
+            - paragraph [ref=e43]: Resultado prev.
+            - paragraph [ref=e44]: R$ 216,67
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Receitas do Mês
+            - generic [ref=e51]: 📈
+          - paragraph [ref=e52]: R$ 150,00
+          - paragraph [ref=e54]: Concluídas
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]: Despesas do Mês
+            - generic [ref=e58]: 📉
+          - paragraph [ref=e59]: R$ 20,00
+          - paragraph [ref=e61]: Concluídas
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]: Saldo
+            - generic [ref=e65]: 💰
+          - paragraph [ref=e66]: R$ 130,00
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - generic [ref=e69]: Dívidas Vencidas
+            - generic [ref=e70]: ⚠️
+          - paragraph [ref=e71]: "0"
+          - paragraph [ref=e73]: Requerem atenção
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e77]: A Pagar
+            - generic [ref=e78]: 💸
+          - paragraph [ref=e79]: R$ 0,00
+          - paragraph [ref=e81]: 0 pendentes
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: A Receber
+            - generic [ref=e85]: 💵
+          - paragraph [ref=e86]: R$ 444,00
+          - paragraph [ref=e88]: 1 pendentes
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: Estoque Baixo
+            - generic [ref=e92]: 📦
+          - paragraph [ref=e93]: "0"
+          - paragraph [ref=e95]: Produtos
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e98]: Próx. Eventos
+            - generic [ref=e99]: 📅
+          - paragraph [ref=e100]: "0"
+          - paragraph [ref=e102]: Nos próximos dias
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]: Empréstimos Ativos
+            - generic [ref=e107]: 🤝
+          - paragraph [ref=e108]: "1"
+          - paragraph [ref=e110]: contratos em aberto
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - generic [ref=e113]: A Receber (Empréstimos)
+            - generic [ref=e114]: 💰
+          - paragraph [ref=e115]: R$ 15,00
+          - paragraph [ref=e117]: parcelas pendentes
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]: Parcelas Vencidas
+            - generic [ref=e121]: ⚠️
+          - paragraph [ref=e122]: "1"
+          - paragraph [ref=e124]: empréstimos em atraso
+      - generic [ref=e125]:
+        - heading "Fluxo de Caixa — Próximos 30 dias" [level=3] [ref=e126]
+        - img [ref=e127]
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - heading "Receitas vs Despesas (6 meses)" [level=3] [ref=e130]
+          - img [ref=e131]
+        - generic [ref=e132]:
+          - heading "Despesas por Categoria" [level=3] [ref=e133]
+          - generic [ref=e134]: Sem dados para o período
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - heading "Transações Recentes" [level=3] [ref=e137]
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - generic [ref=e141]: 📉
+                - generic [ref=e142]:
+                  - paragraph [ref=e143]: Aplicativo ibo
+                  - paragraph [ref=e144]: Sem categoria
+              - generic [ref=e145]: "-R$ 20,00"
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - generic [ref=e148]: 📈
+                - generic [ref=e149]:
+                  - paragraph [ref=e150]: "Venda: Produto Teste"
+                  - paragraph [ref=e151]: Sem categoria
+              - generic [ref=e152]: +R$ 50,00
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - generic [ref=e155]: 📈
+                - generic [ref=e156]:
+                  - paragraph [ref=e157]: "Venda: Produto Teste"
+                  - paragraph [ref=e158]: Sem categoria
+              - generic [ref=e159]: +R$ 50,00
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - generic [ref=e162]: 📈
+                - generic [ref=e163]:
+                  - paragraph [ref=e164]: "Venda: Produto Teste"
+                  - paragraph [ref=e165]: Sem categoria
+              - generic [ref=e166]: +R$ 50,00
+            - generic [ref=e167]:
+              - generic [ref=e168]:
+                - generic [ref=e169]: 📈
+                - generic [ref=e170]:
+                  - paragraph [ref=e171]: Venda Teste
+                  - paragraph [ref=e172]: Sem categoria
+              - generic [ref=e173]: +R$ 150,00
+        - generic [ref=e174]:
+          - heading "Próximos Eventos" [level=3] [ref=e175]
+          - paragraph [ref=e177]: Nenhum evento próximo

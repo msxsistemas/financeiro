@@ -1,0 +1,117 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - complementary [ref=e50]:
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]: 💎
+        - generic [ref=e54]: Financeiro
+      - button "✕" [ref=e55] [cursor=pointer]
+    - navigation [ref=e56]:
+      - link "📊 Dashboard" [ref=e120] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e121]: 📊
+        - generic [ref=e122]: Dashboard
+      - generic [ref=e123]:
+        - button "📋 Dívidas ▾" [ref=e124] [cursor=pointer]:
+          - generic [ref=e125]: 📋
+          - generic [ref=e126]: Dívidas
+          - generic [ref=e127]: ▾
+        - generic [ref=e128]:
+          - button "A Pagar" [ref=e129] [cursor=pointer]:
+            - generic [ref=e131]: A Pagar
+          - button "A Receber" [ref=e132] [cursor=pointer]:
+            - generic [ref=e134]: A Receber
+      - generic [ref=e135]:
+        - button "📺 IPTV ▾" [ref=e136] [cursor=pointer]:
+          - generic [ref=e137]: 📺
+          - generic [ref=e138]: IPTV
+          - generic [ref=e139]: ▾
+        - generic [ref=e140]:
+          - button "Servidores & Apps" [ref=e141] [cursor=pointer]:
+            - generic [ref=e143]: Servidores & Apps
+          - button "Revendas" [ref=e144] [cursor=pointer]:
+            - generic [ref=e146]: Revendas
+          - button "Meus Clientes" [ref=e147] [cursor=pointer]:
+            - generic [ref=e149]: Meus Clientes
+          - button "Dívidas" [ref=e150] [cursor=pointer]:
+            - generic [ref=e152]: Dívidas
+          - button "Despesas" [ref=e153] [cursor=pointer]:
+            - generic [ref=e155]: Despesas
+      - link "💸 Despesas" [ref=e156] [cursor=pointer]:
+        - /url: /expenses
+        - generic [ref=e157]: 💸
+        - generic [ref=e158]: Despesas
+      - link "📦 Produtos" [ref=e159] [cursor=pointer]:
+        - /url: /products
+        - generic [ref=e160]: 📦
+        - generic [ref=e161]: Produtos
+      - link "🏷️ Categorias" [ref=e162] [cursor=pointer]:
+        - /url: /categories
+        - generic [ref=e163]: 🏷️
+        - generic [ref=e164]: Categorias
+      - link "📈 Relatórios" [ref=e165] [cursor=pointer]:
+        - /url: /reports
+        - generic [ref=e166]: 📈
+        - generic [ref=e167]: Relatórios
+      - link "📅 Agenda" [ref=e168] [cursor=pointer]:
+        - /url: /calendar
+        - generic [ref=e169]: 📅
+        - generic [ref=e170]: Agenda
+      - link "💬 WhatsApp" [ref=e171] [cursor=pointer]:
+        - /url: /whatsapp
+        - generic [ref=e172]: 💬
+        - generic [ref=e173]: WhatsApp
+      - link "👥 Contatos" [ref=e174] [cursor=pointer]:
+        - /url: /contacts
+        - generic [ref=e175]: 👥
+        - generic [ref=e176]: Contatos
+      - link "🎯 Metas" [ref=e177] [cursor=pointer]:
+        - /url: /goals
+        - generic [ref=e178]: 🎯
+        - generic [ref=e179]: Metas
+      - link "🤝 Empréstimos" [ref=e180] [cursor=pointer]:
+        - /url: /loans
+        - generic [ref=e181]: 🤝
+        - generic [ref=e182]: Empréstimos
+      - link "⚠️ Inadimplentes" [ref=e183] [cursor=pointer]:
+        - /url: /delinquents
+        - generic [ref=e184]: ⚠️
+        - generic [ref=e185]: Inadimplentes
+      - link "📩 Log WhatsApp" [ref=e186] [cursor=pointer]:
+        - /url: /whatsapp-log
+        - generic [ref=e187]: 📩
+        - generic [ref=e188]: Log WhatsApp
+      - link "⚙️ Configurações" [ref=e189] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e190]: ⚙️
+        - generic [ref=e191]: Configurações
+    - generic [ref=e113]:
+      - button "🌙 Modo escuro" [ref=e114] [cursor=pointer]:
+        - generic [ref=e115]: 🌙
+        - generic [ref=e116]: Modo escuro
+      - button "🚪 Sair" [ref=e117] [cursor=pointer]:
+        - generic [ref=e118]: 🚪
+        - generic [ref=e119]: Sair
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Dívidas" [level=1] [ref=e11]
+          - paragraph [ref=e12]: 0 registros
+        - generic [ref=e13]:
+          - button "📥 CSV" [ref=e14] [cursor=pointer]
+          - button "+ Nova Dívida" [ref=e15] [cursor=pointer]
+      - generic [ref=e16]:
+        - button "Hoje" [ref=e17] [cursor=pointer]
+        - button "Semana" [ref=e18] [cursor=pointer]
+        - button "Mês" [ref=e19] [cursor=pointer]
+        - button "Todas" [ref=e20] [cursor=pointer]
+      - generic [ref=e21]:
+        - button "Todos" [ref=e22] [cursor=pointer]
+        - button "Pendente" [ref=e23] [cursor=pointer]
+        - button "Parcial" [ref=e24] [cursor=pointer]
+        - button "Vencido" [ref=e25] [cursor=pointer]
+        - button "Pago" [ref=e26] [cursor=pointer]
+      - generic [ref=e45]:
+        - paragraph [ref=e46]: 📋
+        - paragraph [ref=e47]: Nenhuma dívida cadastrada

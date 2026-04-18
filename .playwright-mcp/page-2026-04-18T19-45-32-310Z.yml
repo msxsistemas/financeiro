@@ -1,0 +1,14 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - text: 💎
+    - heading "Financeiro MSX" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Gestão financeira inteligente
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]: Email
+      - textbox "seu@email.com" [ref=e11]: admin@financeiro.com
+    - generic [ref=e12]:
+      - generic [ref=e13]: Senha
+      - textbox "••••••••" [ref=e14]: admin123
+    - button "Entrar" [ref=e15] [cursor=pointer]
+  - paragraph [ref=e16]: "Login padrão: admin@financeiro.com / admin123"

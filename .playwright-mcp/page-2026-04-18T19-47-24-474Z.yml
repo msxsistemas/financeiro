@@ -1,0 +1,18 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Despesas IPTV" [level=1] [ref=e11]
+          - paragraph [ref=e12]:
+            - text: 0 no período ·
+            - strong [ref=e13]: R$ 0,00
+        - button "+ Nova Despesa IPTV" [ref=e14] [cursor=pointer]
+      - generic [ref=e15]:
+        - button "Hoje" [ref=e16] [cursor=pointer]
+        - button "Semana" [ref=e17] [cursor=pointer]
+        - button "Mês" [ref=e18] [cursor=pointer]
+        - button "Todas" [ref=e19] [cursor=pointer]
+      - textbox "Buscar por descrição..." [ref=e21]
+      - generic [ref=e22]: Carregando...

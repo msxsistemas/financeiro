@@ -1,0 +1,21 @@
+- generic [ref=e3]:
+  - button "☰" [ref=e4] [cursor=pointer]
+  - main [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "Categorias" [level=1] [ref=e10]
+        - paragraph [ref=e11]: 0 categorias cadastradas
+      - generic [ref=e12]:
+        - button "Todas" [ref=e13] [cursor=pointer]
+        - button "Despesas" [ref=e14] [cursor=pointer]
+        - button "Receitas" [ref=e15] [cursor=pointer]
+      - generic [ref=e16]:
+        - heading "Nova categoria" [level=2] [ref=e17]
+        - generic [ref=e18]:
+          - textbox "Nome da categoria" [ref=e19]
+          - combobox [ref=e20]:
+            - option "Despesa" [selected]
+            - option "Receita"
+          - textbox [ref=e21] [cursor=pointer]: "#6366f1"
+          - button "Adicionar" [ref=e23] [cursor=pointer]
+      - generic [ref=e24]: Carregando...
