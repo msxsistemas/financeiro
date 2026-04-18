@@ -1,0 +1,54 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            set -e
+            cd /var/www/financeiro
+
+            echo "=== git pull ==="
+            git fetch --all
+            git reset --hard origin/main
+
+            echo "=== aplicar migrations pendentes ==="
+            for f in backend/src/migrations/*.sql; do
+              name=$(basename "$f")
+              echo "-- $name"
+              docker exec -i financeiro_postgres psql -U financeiro_user -d financeiro < "$f" || true
+            done
+
+            echo "=== backend deps ==="
+            cd backend
+            npm ci --omit=dev --silent || npm install --omit=dev --silent
+
+            echo "=== restart API ==="
+            npx pm2 restart financeiro-api --update-env
+            npx pm2 save
+            cd ..
+
+            echo "=== frontend build ==="
+            cd frontend
+            npm ci --silent || npm install --silent
+            npm run build
+
+            echo "=== DEPLOY OK ==="
