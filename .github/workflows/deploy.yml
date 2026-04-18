@@ -43,11 +43,8 @@ jobs:
             npm ci --omit=dev --silent || npm install --omit=dev --silent
 
             echo "=== restart API ==="
-            if npx pm2 describe financeiro-api > /dev/null 2>&1; then
-              npx pm2 restart financeiro-api --update-env
-            else
-              npx pm2 start ecosystem.config.cjs
-            fi
+            npx pm2 delete financeiro-api >/dev/null 2>&1 || true
+            npx pm2 start ecosystem.config.cjs
             npx pm2 save
             cd ..
 
