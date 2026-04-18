@@ -10,10 +10,6 @@ export default function Settings() {
   const [profile, setProfile] = useState(null)
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm: '' })
   const [pwLoading, setPwLoading] = useState(false)
-  const [categories, setCategories] = useState([])
-  const [catModal, setCatModal] = useState(false)
-  const [catForm, setCatForm] = useState({ name: '', type: 'expense', color: '#6366f1' })
-  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   // Perfil editavel
   const [profileForm, setProfileForm] = useState({ name: '', email: '' })
@@ -40,14 +36,7 @@ export default function Settings() {
     } catch {}
   }
 
-  const loadCategories = async () => {
-    try {
-      const { data } = await api.get('/api/transactions/categories/list')
-      setCategories(data)
-    } catch {}
-  }
-
-  useEffect(() => { loadProfile(); loadCategories() }, [])
+  useEffect(() => { loadProfile() }, [])
 
   const handleSaveProfile = async (e) => {
     e.preventDefault()
@@ -133,29 +122,6 @@ export default function Settings() {
       toast.error(err.response?.data?.error || 'Código inválido')
     } finally { setTfaLoading(false) }
   }
-
-  const handleCreateCategory = async () => {
-    if (!catForm.name) return toast.error('Nome é obrigatório')
-    try {
-      await api.post('/api/transactions/categories', catForm)
-      toast.success('Categoria criada!')
-      setCatModal(false)
-      setCatForm({ name: '', type: 'expense', color: '#6366f1' })
-      loadCategories()
-    } catch { toast.error('Erro ao criar categoria') }
-  }
-
-  const handleDeleteCategory = async (id) => {
-    try {
-      await api.delete(`/api/transactions/categories/${id}`)
-      toast.success('Removido!')
-      setDeleteConfirm(null)
-      loadCategories()
-    } catch { toast.error('Erro ao remover') }
-  }
-
-  const incomeCategories = categories.filter(c => c.type === 'income')
-  const expenseCategories = categories.filter(c => c.type === 'expense')
 
   return (
     <div className="space-y-6">
@@ -298,48 +264,6 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* Categorias */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-200">🏷️ Categorias</h2>
-          <button onClick={() => setCatModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
-            + Nova
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Receitas</p>
-            {incomeCategories.length === 0 ? <p className="text-xs text-gray-400">Nenhuma</p> : (
-              <div className="flex flex-wrap gap-2">
-                {incomeCategories.map(c => (
-                  <div key={c.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-lg px-3 py-1.5">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{c.name}</span>
-                    <button onClick={() => setDeleteConfirm(c)} className="text-gray-300 hover:text-red-500 ml-1 text-xs">✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Despesas</p>
-            {expenseCategories.length === 0 ? <p className="text-xs text-gray-400">Nenhuma</p> : (
-              <div className="flex flex-wrap gap-2">
-                {expenseCategories.map(c => (
-                  <div key={c.id} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-lg px-3 py-1.5">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{c.name}</span>
-                    <button onClick={() => setDeleteConfirm(c)} className="text-gray-300 hover:text-red-500 ml-1 text-xs">✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Info do sistema */}
       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
         <h2 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 text-sm">ℹ️ Sistema</h2>
@@ -410,52 +334,6 @@ export default function Settings() {
         </div>
       </Modal>
 
-      {/* Modal categoria */}
-      <Modal open={catModal} onClose={() => setCatModal(false)} title="Nova Categoria" size="sm">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome</label>
-            <input value={catForm.name} onChange={e => setCatForm(p => ({ ...p, name: e.target.value }))}
-              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Ex: Freelance, Aluguel..." />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
-            <select value={catForm.type} onChange={e => setCatForm(p => ({ ...p, type: e.target.value }))}
-              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="income">Receita</option>
-              <option value="expense">Despesa</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cor</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={catForm.color} onChange={e => setCatForm(p => ({ ...p, color: e.target.value }))}
-                className="w-10 h-10 rounded cursor-pointer border" />
-              <div className="flex gap-1.5 flex-wrap">
-                {['#6366f1', '#22c55e', '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'].map(c => (
-                  <button key={c} onClick={() => setCatForm(p => ({ ...p, color: c }))}
-                    className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
-                    style={{ backgroundColor: c, borderColor: catForm.color === c ? '#000' : 'transparent' }} />
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => setCatModal(false)} className="flex-1 border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
-            <button onClick={handleCreateCategory} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium">Criar</button>
-          </div>
-        </div>
-      </Modal>
-
-      <ConfirmDialog
-        open={!!deleteConfirm}
-        title="Remover categoria"
-        message={`Deseja remover "${deleteConfirm?.name}"? Transações vinculadas ficarão sem categoria.`}
-        onConfirm={() => handleDeleteCategory(deleteConfirm.id)}
-        onCancel={() => setDeleteConfirm(null)}
-        confirmLabel="Remover"
-      />
     </div>
   )
 }

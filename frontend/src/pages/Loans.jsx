@@ -50,6 +50,10 @@ export default function Loans() {
   const [modal, setModal] = useState(false)
   const [detailModal, setDetailModal] = useState(false)
   const [payModal, setPayModal] = useState(false)
+  const [msgModal, setMsgModal] = useState(false)
+  const [defaultMessage, setDefaultMessage] = useState('')
+  const [templateDefault, setTemplateDefault] = useState('')
+  const [savingMsg, setSavingMsg] = useState(false)
 
   const [form, setForm] = useState(defaultForm)
   const [detail, setDetail] = useState(null)
@@ -77,6 +81,10 @@ export default function Loans() {
   useEffect(() => { setPage(1) }, [statusFilter])
   useEffect(() => {
     api.get('/api/contacts?limit=300').then(r => setContacts(r.data.data || [])).catch(() => {})
+    api.get('/api/loans/default-message').then(r => {
+      setDefaultMessage(r.data.message || '')
+      setTemplateDefault(r.data.default_template || '')
+    }).catch(() => {})
   }, [])
 
   const filteredContacts = contacts.filter(c =>
@@ -93,10 +101,27 @@ export default function Loans() {
   }
 
   const openCreate = () => {
-    setForm({ ...defaultForm, start_date: new Date().toISOString().split('T')[0] })
+    setForm({
+      ...defaultForm,
+      start_date: new Date().toISOString().split('T')[0],
+      custom_message: defaultMessage || ''
+    })
     setContactSearch('')
     setModal(true)
   }
+
+  const saveDefaultMessage = async () => {
+    setSavingMsg(true)
+    try {
+      await api.put('/api/loans/default-message', { message: defaultMessage })
+      toast.success('Mensagem padrão salva')
+      setMsgModal(false)
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erro ao salvar')
+    } finally { setSavingMsg(false) }
+  }
+
+  const resetDefaultMessage = () => setDefaultMessage(templateDefault || '')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -208,6 +233,10 @@ export default function Loans() {
   return (
     <div className="space-y-5">
       <PageHeader title="Empréstimos" subtitle="Controle de crédito pessoal com juros e cobranças automáticas">
+        <button onClick={() => setMsgModal(true)}
+          className="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium">
+          ⚙️ Mensagem padrão
+        </button>
         <button onClick={openCreate}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium">
           + Novo Empréstimo
@@ -610,6 +639,39 @@ export default function Loans() {
             </div>
           )
         })()}
+      </Modal>
+
+      {/* Modal Mensagem Padrão */}
+      <Modal open={msgModal} onClose={() => setMsgModal(false)} title="Mensagem padrão de cobrança" size="md">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Essa mensagem é usada em todas as cobranças automáticas de empréstimos, e pré-preenche o campo
+            "Mensagem personalizada" de novos empréstimos.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Template</label>
+            <textarea value={defaultMessage} onChange={e => setDefaultMessage(e.target.value)} rows={10}
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+              placeholder={templateDefault} />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-gray-500">
+                Variáveis: <code>{'{nome}'}</code>, <code>{'{valor}'}</code>, <code>{'{vencimento}'}</code>, <code>{'{parcela}'}</code>
+              </p>
+              <button onClick={resetDefaultMessage}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Restaurar padrão</button>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setMsgModal(false)}
+              className="flex-1 border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancelar
+            </button>
+            <button onClick={saveDefaultMessage} disabled={savingMsg}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-2 rounded-lg text-sm font-medium">
+              {savingMsg ? 'Salvando...' : 'Salvar mensagem'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

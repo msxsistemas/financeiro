@@ -19,7 +19,10 @@ import Delinquents from './pages/Delinquents'
 import WhatsAppLog from './pages/WhatsAppLog'
 import IPTV from './pages/IPTV'
 import IPTVDebts from './pages/IPTVDebts'
+import IPTVExpenses from './pages/IPTVExpenses'
 import Expenses from './pages/Expenses'
+import Products from './pages/Products'
+import Categories from './pages/Categories'
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('fin_token')
@@ -50,11 +53,14 @@ export default function App() {
 
             <Route path="goals" element={<Goals />} />
             <Route path="expenses" element={<Expenses />} />
+            <Route path="products" element={<Products />} />
+            <Route path="categories" element={<Categories />} />
             <Route path="loans" element={<Loans />} />
             <Route path="delinquents" element={<Delinquents />} />
             <Route path="whatsapp-log" element={<WhatsAppLog />} />
             <Route path="iptv" element={<IPTV />} />
             <Route path="iptv/debts" element={<IPTVDebts />} />
+            <Route path="iptv/expenses" element={<IPTVExpenses />} />
             <Route path="iptv/:subtab" element={<IPTV />} />
             <Route path="settings" element={<Settings />} />
           </Route>

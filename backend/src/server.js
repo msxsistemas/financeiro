@@ -31,6 +31,7 @@ import iptvRoutes from './routes/iptv.js'
 import emailRoutes from './routes/email.js'
 import bulkRoutes from './routes/bulk.js'
 import transactionsRoutes from './routes/transactions.js'
+import productsRoutes from './routes/products.js'
 
 const app = Fastify({
   logger: { level: 'info' },
@@ -178,6 +179,7 @@ await app.register(iptvRoutes, { prefix: '/api/iptv' })
 await app.register(emailRoutes, { prefix: '/api/email' })
 await app.register(bulkRoutes, { prefix: '/api/bulk' })
 await app.register(transactionsRoutes, { prefix: '/api/transactions' })
+await app.register(productsRoutes, { prefix: '/api/products' })
 
 // Health check
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))

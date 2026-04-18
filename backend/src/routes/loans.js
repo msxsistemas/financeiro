@@ -121,7 +121,31 @@ const payInstallmentSchema = {
   }
 }
 
+const DEFAULT_LOAN_MESSAGE = `Olá {nome}! 👋
+
+Lembrete: sua parcela *{parcela}* vence em *{vencimento}*.
+
+💰 Valor: *{valor}*
+
+Evite atrasos e possíveis encargos!`
+
 export default async function loansRoutes(app) {
+
+  // Mensagem padrão (template) do usuário
+  app.get('/default-message', { preHandler: [app.authenticate] }, async (request) => {
+    const r = await query('SELECT loan_default_message FROM users WHERE id = $1', [request.user.id])
+    return {
+      message: r.rows[0]?.loan_default_message || DEFAULT_LOAN_MESSAGE,
+      is_default: !r.rows[0]?.loan_default_message,
+      default_template: DEFAULT_LOAN_MESSAGE
+    }
+  })
+
+  app.put('/default-message', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const { message } = request.body
+    await query('UPDATE users SET loan_default_message = $1 WHERE id = $2', [message || null, request.user.id])
+    return { ok: true }
+  })
 
   // Listar empréstimos
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
@@ -474,9 +498,11 @@ export default async function loansRoutes(app) {
     const { custom_message } = request.body
 
     const instRes = await query(`
-      SELECT li.*, l.contact_name, l.contact_phone, l.interest_rate, l.frequency, l.custom_message
+      SELECT li.*, l.contact_name, l.contact_phone, l.interest_rate, l.frequency, l.custom_message,
+        u.loan_default_message AS user_default_message
       FROM loan_installments li
       JOIN loans l ON l.id = li.loan_id
+      JOIN users u ON u.id = li.user_id
       WHERE li.id = $1 AND li.user_id = $2
     `, [id, userId])
     if (!instRes.rows[0]) return reply.code(404).send({ error: 'Parcela não encontrada' })
@@ -493,7 +519,7 @@ export default async function loansRoutes(app) {
     const fmt = (v) => `R$ ${parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
     const isOverdue = new Date(inst.due_date) < new Date()
 
-    const template = custom_message || inst.custom_message
+    const template = custom_message || inst.custom_message || inst.user_default_message
     const interpolate = (tpl) => tpl
       .replace(/\{nome\}/g, inst.contact_name || '')
       .replace(/\{valor\}/g, fmt(total))

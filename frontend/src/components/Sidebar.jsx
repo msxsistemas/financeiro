@@ -19,9 +19,12 @@ const navItems = [
       { path: '/iptv/resellers', label: 'Revendas' },
       { path: '/iptv/my-clients', label: 'Meus Clientes' },
       { path: '/iptv/debts', label: 'Dívidas' },
+      { path: '/iptv/expenses', label: 'Despesas' },
     ]
   },
   { path: '/expenses', icon: '💸', label: 'Despesas' },
+  { path: '/products', icon: '📦', label: 'Produtos' },
+  { path: '/categories', icon: '🏷️', label: 'Categorias' },
   { path: '/reports', icon: '📈', label: 'Relatórios' },
   { path: '/calendar', icon: '📅', label: 'Agenda' },
   { path: '/whatsapp', icon: '💬', label: 'WhatsApp' },
