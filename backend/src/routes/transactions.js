@@ -233,6 +233,17 @@ export default async function transactionsRoutes(app) {
     return reply.code(201).send(result.rows[0])
   })
 
+  app.put('/categories/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const { name, type, color } = request.body
+    if (!name || !type) return reply.code(400).send({ error: 'Nome e tipo são obrigatórios' })
+    const result = await query(
+      'UPDATE categories SET name = $1, type = $2, color = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
+      [name, type, color || '#6366f1', request.params.id, request.user.id]
+    )
+    if (!result.rows[0]) return reply.code(404).send({ error: 'Categoria não encontrada' })
+    return result.rows[0]
+  })
+
   app.delete('/categories/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     await query('DELETE FROM categories WHERE id = $1 AND user_id = $2', [request.params.id, request.user.id])
     return { message: 'Removido' }
