@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../api'
 import toast from 'react-hot-toast'
+import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 
 const statusColor = {
   sent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -14,6 +15,7 @@ export default function WhatsAppLog() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ source: '', status: '' })
+  const [period, setPeriod] = useState('all')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -21,6 +23,9 @@ export default function WhatsAppLog() {
       const params = new URLSearchParams({ page, limit: 50 })
       if (filters.source) params.set('source', filters.source)
       if (filters.status) params.set('status', filters.status)
+      const range = periodRange(period)
+      if (range.start_date) params.set('start_date', range.start_date)
+      if (range.end_date) params.set('end_date', range.end_date)
       const { data: res } = await api.get(`/api/whatsapp-log?${params}`)
       setData(res)
     } catch {
@@ -28,7 +33,7 @@ export default function WhatsAppLog() {
     } finally {
       setLoading(false)
     }
-  }, [page, filters])
+  }, [page, filters, period])
 
   useEffect(() => { load() }, [load])
 
@@ -51,7 +56,8 @@ export default function WhatsAppLog() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-3">
+      <PeriodFilter value={period} onChange={setPeriod} />
+      <div className="flex gap-3 flex-wrap">
         <select value={filters.source} onChange={e => setFilters(p => ({ ...p, source: e.target.value }))}
           className="border dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="">Todas as origens</option>

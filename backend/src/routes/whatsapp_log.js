@@ -3,7 +3,7 @@ import { query } from '../db/index.js'
 export default async function whatsappLogRoutes(app) {
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id
-    const { page = 1, limit = 50, source, status } = request.query
+    const { page = 1, limit = 50, source, status, start_date, end_date } = request.query
 
     const conditions = ['user_id = $1']
     const params = [userId]
@@ -11,6 +11,8 @@ export default async function whatsappLogRoutes(app) {
 
     if (source) { conditions.push(`source = $${idx++}`); params.push(source) }
     if (status) { conditions.push(`status = $${idx++}`); params.push(status) }
+    if (start_date) { conditions.push(`created_at >= $${idx++}`); params.push(start_date) }
+    if (end_date) { conditions.push(`created_at <= $${idx++}::date + INTERVAL '1 day'`); params.push(end_date) }
 
     const offset = (parseInt(page) - 1) * parseInt(limit)
     const where = conditions.join(' AND ')

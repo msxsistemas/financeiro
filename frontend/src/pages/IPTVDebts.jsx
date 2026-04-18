@@ -4,6 +4,7 @@ import api from '../api'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import MaskedInput from '../components/MaskedInput'
+import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 
 const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
 const statusLabel = { pending: 'Pendente', partial: 'Parcial', paid: 'Pago', overdue: 'Vencido' }
@@ -20,6 +21,7 @@ export default function IPTVDebts() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('receivable')
   const [statusFilter, setStatusFilter] = useState('')
+  const [period, setPeriod] = useState('all')
   const [modal, setModal] = useState(false)
   const [payModal, setPayModal] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -37,6 +39,9 @@ export default function IPTVDebts() {
     try {
       const params = new URLSearchParams({ type: tab })
       if (statusFilter) params.set('status', statusFilter)
+      const range = periodRange(period)
+      if (range.start_date) params.set('start_date', range.start_date)
+      if (range.end_date) params.set('end_date', range.end_date)
       const [debtsRes, statsRes, resRes] = await Promise.all([
         api.get(`/api/iptv/debts?${params}`),
         api.get('/api/iptv/debts/stats'),
@@ -47,7 +52,7 @@ export default function IPTVDebts() {
       setResellers(resRes.data)
     } catch { toast.error('Erro ao carregar') }
     finally { setLoading(false) }
-  }, [tab, statusFilter])
+  }, [tab, statusFilter, period])
 
   useEffect(() => { load() }, [load])
 
@@ -167,7 +172,8 @@ export default function IPTVDebts() {
         </button>
       </div>
 
-      {/* Filtro */}
+      {/* Filtros */}
+      <PeriodFilter value={period} onChange={setPeriod} />
       <div className="flex gap-2 flex-wrap">
         {['', 'pending', 'partial', 'overdue', 'paid'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}

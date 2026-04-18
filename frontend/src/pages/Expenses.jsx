@@ -3,38 +3,12 @@ import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import MaskedInput from '../components/MaskedInput'
+import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 import api from '../api'
 import { formatCurrencyBRL, formatDateBR } from '../utils/masks'
 
 const defaultForm = {
   description: '', amount: '', category_id: '', notes: ''
-}
-
-const PERIODS = [
-  { key: 'today', label: 'Hoje' },
-  { key: 'week', label: 'Semana' },
-  { key: 'month', label: 'Mês' },
-  { key: 'all', label: 'Todas' }
-]
-
-function periodRange(key) {
-  const today = new Date()
-  const iso = (d) => d.toISOString().split('T')[0]
-  if (key === 'today') {
-    const t = iso(today)
-    return { start_date: t, end_date: t }
-  }
-  if (key === 'week') {
-    const start = new Date(today)
-    start.setDate(today.getDate() - 6)
-    return { start_date: iso(start), end_date: iso(today) }
-  }
-  if (key === 'month') {
-    const start = new Date(today.getFullYear(), today.getMonth(), 1)
-    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-    return { start_date: iso(start), end_date: iso(end) }
-  }
-  return {}
 }
 
 export default function Expenses() {
@@ -174,17 +148,7 @@ export default function Expenses() {
         </div>
       </div>
 
-      {/* Filtros de período */}
-      <div className="flex gap-2 flex-wrap">
-        {PERIODS.map(p => (
-          <button key={p.key} onClick={() => setPeriod(p.key)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${period === p.key
-              ? 'bg-indigo-600 text-white border-indigo-600'
-              : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-indigo-400'}`}>
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <PeriodFilter value={period} onChange={setPeriod} />
 
       <div className="flex gap-2 flex-wrap items-center">
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}

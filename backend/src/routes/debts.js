@@ -37,7 +37,7 @@ export default async function debtsRoutes(app) {
   // Listar dívidas
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id
-    const { type, status, page = 1, limit = 20, search } = request.query
+    const { type, status, page = 1, limit = 20, search, start_date, end_date } = request.query
 
     const conditions = ['d.user_id = $1']
     const params = [userId]
@@ -45,6 +45,8 @@ export default async function debtsRoutes(app) {
 
     if (type) { conditions.push(`d.type = $${idx++}`); params.push(type) }
     if (status) { conditions.push(`d.status = $${idx++}`); params.push(status) }
+    if (start_date) { conditions.push(`d.due_date >= $${idx++}`); params.push(start_date) }
+    if (end_date) { conditions.push(`d.due_date <= $${idx++}`); params.push(end_date) }
     if (search) {
       conditions.push(`(d.description ILIKE $${idx} OR d.contact_name ILIKE $${idx})`)
       params.push(`%${search}%`)

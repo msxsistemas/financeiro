@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
 import MaskedInput from '../components/MaskedInput'
 import NumberStepper from '../components/NumberStepper'
+import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import Pagination from '../components/Pagination'
@@ -44,6 +45,7 @@ export default function Loans() {
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('active')
+  const [period, setPeriod] = useState('all')
 
   const [modal, setModal] = useState(false)
   const [detailModal, setDetailModal] = useState(false)
@@ -59,13 +61,17 @@ export default function Loans() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await api.get(`/api/loans?status=${statusFilter}&page=${page}&limit=20`)
+      const params = new URLSearchParams({ status: statusFilter, page, limit: 20 })
+      const range = periodRange(period)
+      if (range.start_date) params.set('start_date', range.start_date)
+      if (range.end_date) params.set('end_date', range.end_date)
+      const { data } = await api.get(`/api/loans?${params}`)
       setItems(data.data)
       setTotal(data.total)
       setPages(data.pages)
     } catch { toast.error('Erro ao carregar empréstimos') }
     finally { setLoading(false) }
-  }, [statusFilter, page])
+  }, [statusFilter, page, period])
 
   useEffect(() => { load() }, [load])
   useEffect(() => { setPage(1) }, [statusFilter])
@@ -209,6 +215,7 @@ export default function Loans() {
       </PageHeader>
 
       {/* Filtros */}
+      <PeriodFilter value={period} onChange={setPeriod} />
       <div className="flex gap-2 mb-4">
         {['active', 'paid', 'defaulted'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}

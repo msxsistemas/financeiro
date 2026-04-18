@@ -228,11 +228,13 @@ export default async function iptvRoutes(app) {
   })
 
   app.get('/debts', { preHandler: [app.authenticate] }, async (req) => {
-    const { status, type } = req.query
+    const { status, type, start_date, end_date } = req.query
     let where = 'd.user_id = $1'
     const params = [req.user.id]
     if (status) { params.push(status); where += ` AND d.status = $${params.length}` }
     if (type) { params.push(type); where += ` AND d.type = $${params.length}` }
+    if (start_date) { params.push(start_date); where += ` AND d.due_date >= $${params.length}` }
+    if (end_date) { params.push(end_date); where += ` AND d.due_date <= $${params.length}` }
     const res = await query(`
       SELECT d.*,
         r.name AS reseller_name,

@@ -126,13 +126,15 @@ export default async function loansRoutes(app) {
   // Listar empréstimos
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id
-    const { status, search, page = 1, limit = 20 } = request.query
+    const { status, search, page = 1, limit = 20, start_date, end_date } = request.query
 
     const conditions = ['l.user_id = $1']
     const params = [userId]
     let idx = 2
 
     if (status) { conditions.push(`l.status = $${idx++}`); params.push(status) }
+    if (start_date) { conditions.push(`l.first_due_date >= $${idx++}`); params.push(start_date) }
+    if (end_date) { conditions.push(`l.first_due_date <= $${idx++}`); params.push(end_date) }
     if (search) {
       conditions.push(`l.contact_name ILIKE $${idx++}`)
       params.push(`%${search}%`)

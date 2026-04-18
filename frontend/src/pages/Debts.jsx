@@ -6,6 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import PixQrCode from '../components/PixQrCode'
 import MaskedInput from '../components/MaskedInput'
 import NumberStepper from '../components/NumberStepper'
+import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 import api from '../api'
 import { formatCurrencyBRL, formatDateBR } from '../utils/masks'
 
@@ -55,6 +56,7 @@ export default function Debts({ forcedTab }) {
   const [pdfLoading, setPdfLoading] = useState(null)
   const [csvLoading, setCsvLoading] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
+  const [period, setPeriod] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   const load = useCallback(async (reset = true) => {
@@ -64,6 +66,9 @@ export default function Debts({ forcedTab }) {
     try {
       const params = new URLSearchParams({ type: tab, page: pageRef.current, limit: 20 })
       if (statusFilter) params.set('status', statusFilter)
+      const range = periodRange(period)
+      if (range.start_date) params.set('start_date', range.start_date)
+      if (range.end_date) params.set('end_date', range.end_date)
       const { data } = await api.get(`/api/debts?${params}`)
       if (gen !== loadGenRef.current) return
       if (reset) setItems(data.data)
@@ -78,7 +83,7 @@ export default function Debts({ forcedTab }) {
       if (reset) setLoading(false)
       else setLoadingMore(false)
     }
-  }, [tab, statusFilter])
+  }, [tab, statusFilter, period])
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || loading) return
@@ -212,7 +217,8 @@ export default function Debts({ forcedTab }) {
       </div>
 
 
-      {/* Filtro de status */}
+      {/* Filtros */}
+      <PeriodFilter value={period} onChange={setPeriod} />
       <div className="flex gap-2 flex-wrap">
         {[['', 'Todos'], ['pending', 'Pendente'], ['partial', 'Parcial'], ['overdue', 'Vencido'], ['paid', 'Pago']].map(([v, l]) => (
           <button key={v} onClick={() => setStatusFilter(v)}
