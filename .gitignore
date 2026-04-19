@@ -43,3 +43,5 @@ backend/backups/
 
 # Playwright MCP sessions
 .playwright-mcp/
+mobile-*.png
+desktop-*.png
