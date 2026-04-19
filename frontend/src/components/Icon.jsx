@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Receipt, Banknote, Tv, FileBarChart, Calendar,
   MessageCircle, Users, Target, Handshake, AlertTriangle, Inbox,
-  Package, Tag, TrendingDown, Settings, Trash2,
+  Package, Tag, TrendingDown, Settings, Trash2, Shield,
   Plus, Edit, Save, X, Check, Search, ChevronDown, ChevronUp,
   ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, Filter,
   Eye, EyeOff, Download, Upload, Copy, RefreshCw, Send,
@@ -18,7 +18,7 @@ const ICONS = {
   whatsapp: MessageCircle, contacts: Users, goals: Target,
   loans: Handshake, delinquents: AlertTriangle, inbox: Inbox,
   products: Package, categories: Tag, expenses: TrendingDown,
-  settings: Settings, trash: Trash2,
+  settings: Settings, trash: Trash2, shield: Shield,
   // ações
   add: Plus, edit: Edit, save: Save, close: X, check: Check,
   search: Search, filter: Filter, download: Download, upload: Upload,

@@ -34,6 +34,7 @@ const navItems = [
   { path: '/delinquents', icon: 'delinquents', label: 'Inadimplentes' },
   { path: '/whatsapp-log', icon: 'inbox', label: 'Log WhatsApp' },
   { path: '/trash', icon: 'trash', label: 'Lixeira' },
+  { path: '/admin', icon: 'shield', label: 'Admin', adminOnly: true },
   { path: '/settings', icon: 'settings', label: 'Configurações' },
 ]
 
@@ -43,10 +44,13 @@ export default function Sidebar() {
   const { dark, toggleDark } = useTheme()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('fin_sidebar_collapsed') === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const currentUser = (() => { try { return JSON.parse(localStorage.getItem('fin_user') || '{}') } catch { return {} } })()
+  const visibleNav = navItems.filter(item => !item.adminOnly || currentUser.role === 'admin')
+
   const [openMenus, setOpenMenus] = useState(() => {
-    // Auto-abrir menu se estamos numa rota filha
     const open = {}
-    navItems.forEach(item => {
+    visibleNav.forEach(item => {
       if (item.children && location.pathname === item.path) open[item.path] = true
     })
     return open
@@ -71,7 +75,7 @@ export default function Sidebar() {
 
   const NavContent = ({ onNavClick }) => (
     <>
-      {navItems.map(item => {
+      {visibleNav.map(item => {
         const isActive = item.exact
           ? location.pathname === item.path
           : location.pathname === item.path || location.pathname.startsWith(item.path + '/')

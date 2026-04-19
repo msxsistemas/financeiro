@@ -25,6 +25,7 @@ export default async function authRoutes(app) {
     const user = result.rows[0]
 
     if (!user) return reply.code(401).send({ error: 'Credenciais inválidas' })
+    if (user.active === false) return reply.code(403).send({ error: 'Conta desativada. Contate um administrador.' })
 
     const valid = await bcrypt.compare(password, user.password_hash)
     if (!valid) return reply.code(401).send({ error: 'Credenciais inválidas' })
@@ -55,6 +56,7 @@ export default async function authRoutes(app) {
     ).catch(() => {})
 
     await logActivity(user.id, 'LOGIN', 'user', user.id, 'Login realizado')
+    await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]).catch(() => {})
 
     // Set httpOnly cookies
     reply.setCookie('fin_token', token, {
