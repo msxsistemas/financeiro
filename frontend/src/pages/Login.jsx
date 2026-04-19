@@ -59,6 +59,8 @@ export default function Login() {
       if (data.user?.must_change_password) {
         toast('Por segurança, troque a senha padrão agora', { icon: '🔐', duration: 5000 })
         navigate('/settings?forcePassword=1')
+      } else if (data.user?.role === 'admin') {
+        navigate('/admin')
       } else {
         navigate('/')
       }

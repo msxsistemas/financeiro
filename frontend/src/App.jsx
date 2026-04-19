@@ -40,8 +40,14 @@ function PrivateRoute({ children }) {
     return !localStorage.getItem('fin_onboarding_done')
       && !!localStorage.getItem('fin_token')
       && !user.must_change_password
+      && user.role !== 'admin'
   })
   if (!token) return <Navigate to="/login" replace />
+  // Admin não acessa o painel de usuário — é só pra gerenciar.
+  // Exceção: troca obrigatória de senha precisa passar por /settings.
+  if (user.role === 'admin' && !user.must_change_password) {
+    return <Navigate to="/admin" replace />
+  }
   if (showOnboarding) return <Onboarding onComplete={() => { localStorage.setItem('fin_onboarding_done', '1'); setShowOnboarding(false) }} />
   return children
 }

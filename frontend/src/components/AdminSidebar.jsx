@@ -32,14 +32,6 @@ export default function AdminSidebar() {
           <span>{item.label}</span>
         </NavLink>
       ))}
-
-      <div className="h-px bg-red-900/60 my-2 mx-3" />
-
-      <button onClick={() => { navigate('/'); onNavClick?.() }}
-        className="flex items-center gap-3 px-4 py-3 text-sm text-red-100 hover:bg-red-900/60 hover:text-white w-full transition-colors">
-        <Icon name="arrow-left" size={20} className="shrink-0" />
-        <span>Voltar ao app</span>
-      </button>
     </>
   )
 

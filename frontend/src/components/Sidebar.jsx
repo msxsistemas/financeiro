@@ -42,8 +42,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('fin_sidebar_collapsed') === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const currentUser = (() => { try { return JSON.parse(localStorage.getItem('fin_user') || '{}') } catch { return {} } })()
-  const visibleNav = navItems.filter(item => !item.adminOnly || currentUser.role === 'admin')
+  const visibleNav = navItems
 
   const [openMenus, setOpenMenus] = useState(() => {
     const open = {}
@@ -78,7 +77,6 @@ export default function Sidebar() {
     setCollapsed(next)
     localStorage.setItem('fin_sidebar_collapsed', String(next))
   }
-  const user = (() => { try { return JSON.parse(localStorage.getItem('fin_user') || '{}') } catch { return {} } })()
 
   const handleLogout = () => {
     localStorage.removeItem('fin_token')
@@ -195,13 +193,6 @@ export default function Sidebar() {
               <NavContent onNavClick={() => setMobileOpen(false)} />
             </nav>
             <div className="border-t border-gray-700 p-4 space-y-2">
-              {currentUser.role === 'admin' && (
-                <button onClick={() => navigate('/admin')}
-                  className="flex items-center gap-3 text-red-300 hover:text-red-100 transition-colors text-sm w-full">
-                  <Icon name="shield" size={18} />
-                  <span>Painel Admin</span>
-                </button>
-              )}
               <button onClick={toggleDark}
                 className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full">
                 <Icon name={dark ? 'sun' : 'moon'} size={18} />
@@ -237,15 +228,8 @@ export default function Sidebar() {
           <NavContent />
         </nav>
 
-        {/* Rodapé: admin + dark mode + logout */}
+        {/* Rodapé: dark mode + logout */}
         <div className="border-t border-gray-700 p-4 space-y-1">
-          {currentUser.role === 'admin' && (
-            <button onClick={() => navigate('/admin')}
-              className="flex items-center gap-3 text-red-300 hover:text-red-100 transition-colors text-sm w-full px-0 py-2">
-              <Icon name="shield" size={18} className="shrink-0" />
-              {!collapsed && <span>Painel Admin</span>}
-            </button>
-          )}
           <button onClick={toggleDark}
             className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full px-0 py-2">
             <Icon name={dark ? 'sun' : 'moon'} size={18} className="shrink-0" />
