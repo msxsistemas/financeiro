@@ -41,10 +41,9 @@ backend/backups/
 # Claude
 .claude/settings.local.json
 
-# Playwright MCP sessions
+# Playwright MCP sessions / screenshots de teste
 .playwright-mcp/
-mobile-*.png
-desktop-*.png
-admin-*.png
-after-*.png
-force-*.png
+*.png
+!backend/src/**/*.png
+!frontend/src/**/*.png
+!frontend/public/**/*.png
