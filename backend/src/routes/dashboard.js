@@ -25,6 +25,144 @@ export default async function dashboardRoutes(app) {
     }
   })
 
+  // Alertas inteligentes: despesas altas, parcelas próximas, dívidas vencidas
+  app.get('/alerts', { preHandler: [app.authenticate] }, async (request) => {
+    const userId = request.user.id
+    const alerts = []
+
+    // Dívidas vencidas
+    const overdueDebts = await query(`
+      SELECT COUNT(*)::int AS c, COALESCE(SUM(amount - paid_amount), 0) AS total
+      FROM debts WHERE user_id = $1 AND status IN ('pending', 'partial', 'overdue')
+        AND due_date < CURRENT_DATE
+    `, [userId])
+    if (overdueDebts.rows[0].c > 0) {
+      alerts.push({
+        severity: 'error',
+        icon: '⚠️',
+        title: `${overdueDebts.rows[0].c} dívida(s) vencida(s)`,
+        message: `Total em atraso: R$ ${parseFloat(overdueDebts.rows[0].total).toFixed(2)}`,
+        link: '/debts/payable'
+      })
+    }
+
+    // Parcelas de empréstimo próximas (7 dias)
+    const upcoming = await query(`
+      SELECT COUNT(*)::int AS c
+      FROM loan_installments li
+      JOIN loans l ON l.id = li.loan_id
+      WHERE li.user_id = $1 AND NOT li.paid
+        AND li.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+    `, [userId])
+    if (upcoming.rows[0].c > 0) {
+      alerts.push({
+        severity: 'warning',
+        icon: '📅',
+        title: `${upcoming.rows[0].c} parcela(s) vencem em 7 dias`,
+        message: 'Considere enviar cobrança antecipada',
+        link: '/loans'
+      })
+    }
+
+    // Despesa do mês vs média 3 meses anteriores
+    const now = new Date()
+    const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const threeMoAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().split('T')[0]
+    const avgRes = await query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN paid_date >= $2 THEN amount ELSE 0 END), 0) AS this_month,
+        COALESCE(SUM(CASE WHEN paid_date >= $3 AND paid_date < $2 THEN amount ELSE 0 END) / 3, 0) AS avg_prev
+      FROM transactions
+      WHERE user_id = $1 AND type = 'expense' AND status = 'completed'
+        AND paid_date >= $3
+    `, [userId, thisMonthStart, threeMoAgo])
+    const thisMonth = parseFloat(avgRes.rows[0].this_month)
+    const avgPrev = parseFloat(avgRes.rows[0].avg_prev)
+    if (avgPrev > 0 && thisMonth > avgPrev * 1.2) {
+      const pct = Math.round((thisMonth / avgPrev - 1) * 100)
+      alerts.push({
+        severity: 'warning',
+        icon: '📈',
+        title: `Despesas ${pct}% acima da média`,
+        message: `Este mês: R$ ${thisMonth.toFixed(2)} · média: R$ ${avgPrev.toFixed(2)}`,
+        link: '/expenses'
+      })
+    }
+
+    // Produtos com estoque baixo
+    const lowStock = await query(`
+      SELECT COUNT(*)::int AS c FROM products
+      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0
+    `, [userId])
+    if (lowStock.rows[0].c > 0) {
+      alerts.push({
+        severity: 'warning',
+        icon: '📦',
+        title: `${lowStock.rows[0].c} produto(s) com estoque baixo`,
+        message: 'Verifique o painel de Produtos',
+        link: '/products'
+      })
+    }
+
+    // Meta de receita (se configurada) e progresso
+    const goalRes = await query(`
+      SELECT target_income FROM monthly_income_goals
+      WHERE user_id = $1 AND month = $2 AND year = $3
+    `, [userId, now.getMonth() + 1, now.getFullYear()]).catch(() => ({ rows: [] }))
+    if (goalRes.rows[0]?.target_income) {
+      const incomeRes = await query(`
+        SELECT COALESCE(SUM(amount), 0) AS total FROM transactions
+        WHERE user_id = $1 AND type = 'income' AND status = 'completed'
+          AND paid_date >= $2
+      `, [userId, thisMonthStart])
+      const target = parseFloat(goalRes.rows[0].target_income)
+      const earned = parseFloat(incomeRes.rows[0].total)
+      const pct = Math.round((earned / target) * 100)
+      if (pct < 50) {
+        alerts.push({
+          severity: 'info',
+          icon: '🎯',
+          title: `Meta mensal: ${pct}% atingida`,
+          message: `R$ ${earned.toFixed(2)} de R$ ${target.toFixed(2)}`,
+          link: '/reports'
+        })
+      }
+    }
+
+    return { alerts }
+  })
+
+  // Evolução patrimonial: últimos 12 meses
+  app.get('/patrimony-history', { preHandler: [app.authenticate] }, async (request) => {
+    const userId = request.user.id
+    const rows = await query(`
+      WITH months AS (
+        SELECT date_trunc('month', CURRENT_DATE - (n || ' months')::interval)::date AS m
+        FROM generate_series(0, 11) n
+      )
+      SELECT
+        to_char(m.m, 'YYYY-MM') AS month,
+        COALESCE((SELECT SUM(amount) FROM transactions
+          WHERE user_id = $1 AND type = 'income' AND status = 'completed'
+          AND paid_date >= m.m AND paid_date < m.m + INTERVAL '1 month'), 0) AS income,
+        COALESCE((SELECT SUM(amount) FROM transactions
+          WHERE user_id = $1 AND type = 'expense' AND status = 'completed'
+          AND paid_date >= m.m AND paid_date < m.m + INTERVAL '1 month'), 0) AS expense
+      FROM months m
+      ORDER BY m.m ASC
+    `, [userId])
+
+    let cumulative = 0
+    const data = rows.rows.map(r => {
+      const income = parseFloat(r.income)
+      const expense = parseFloat(r.expense)
+      const net = income - expense
+      cumulative += net
+      return { month: r.month, income, expense, net, cumulative }
+    })
+    return { data }
+  })
+
   app.get('/', {
     preHandler: [app.authenticate]
   }, async (request) => {

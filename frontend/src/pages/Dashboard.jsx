@@ -41,6 +41,8 @@ export default function Dashboard() {
   const [planning, setPlanning] = useState(null)
   const [loading, setLoading] = useState(true)
   const [alerts, setAlerts] = useState([])
+  const [smartAlerts, setSmartAlerts] = useState([])
+  const [patrimonyHistory, setPatrimonyHistory] = useState([])
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
@@ -50,18 +52,22 @@ export default function Dashboard() {
     try {
       const today = new Date().toISOString().split('T')[0]
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-      const [dashRes, catRes, cashRes, planRes, debtsRes, txRes] = await Promise.allSettled([
+      const [dashRes, catRes, cashRes, planRes, debtsRes, txRes, smartRes, patrRes] = await Promise.allSettled([
         api.get(`/api/dashboard?month=${month}&year=${year}`),
         api.get(`/api/dashboard/by-category?month=${month}&year=${year}`),
         api.get('/api/reports/cashflow?days=30'),
         api.get(`/api/reports/planning?month=${month}&year=${year}`),
         api.get(`/api/debts?status=pending&start_date=${today}&end_date=${tomorrow}&limit=100`),
-        api.get(`/api/transactions?status=pending&start_date=${today}&end_date=${tomorrow}&limit=100`)
+        api.get(`/api/transactions?status=pending&start_date=${today}&end_date=${tomorrow}&limit=100`),
+        api.get('/api/dashboard/alerts'),
+        api.get('/api/dashboard/patrimony-history')
       ])
       if (dashRes.status === 'fulfilled') setData(dashRes.value.data)
       if (catRes.status === 'fulfilled') setCategories(catRes.value.data)
       if (cashRes.status === 'fulfilled') setCashflow(cashRes.value.data)
       if (planRes.status === 'fulfilled') setPlanning(planRes.value.data)
+      if (smartRes.status === 'fulfilled') setSmartAlerts(smartRes.value.data.alerts || [])
+      if (patrRes.status === 'fulfilled') setPatrimonyHistory(patrRes.value.data.data || [])
       const allAlerts = [
         ...(debtsRes.status === 'fulfilled' ? debtsRes.value.data.data.map(d => ({ type: 'debt', label: d.description, amount: d.amount, date: d.due_date })) : []),
         ...(txRes.status === 'fulfilled' ? txRes.value.data.data.map(t => ({ type: 'transaction', label: t.description, amount: t.amount, date: t.due_date })) : [])
@@ -169,6 +175,29 @@ export default function Dashboard() {
           </select>
         </div>
       </div>
+
+      {/* Alertas inteligentes (backend) */}
+      {smartAlerts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {smartAlerts.map((a, i) => {
+            const cls = a.severity === 'error'
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+              : a.severity === 'warning'
+                ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
+                : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300'
+            return (
+              <a key={i} href={a.link}
+                className={`rounded-xl border p-4 flex items-start gap-3 hover:shadow-sm transition-shadow ${cls}`}>
+                <span className="text-xl shrink-0">{a.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{a.title}</p>
+                  <p className="text-xs opacity-80 mt-0.5">{a.message}</p>
+                </div>
+              </a>
+            )
+          })}
+        </div>
+      )}
 
       {/* Alertas de vencimento */}
       {alerts.length > 0 && (
@@ -279,6 +308,45 @@ export default function Dashboard() {
           {s.loans_overdue_installments > 0 && (
             <StatCard title="Parcelas Vencidas" value={s.loans_overdue_installments} icon="⚠️" color="text-red-600" sub="empréstimos em atraso" />
           )}
+        </div>
+      )}
+
+      {/* Evolução Patrimonial (12 meses) */}
+      {patrimonyHistory.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+          <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Evolução Patrimonial — 12 meses</h3>
+          <Line
+            data={{
+              labels: patrimonyHistory.map(d => {
+                const [y, m] = d.month.split('-')
+                return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+              }),
+              datasets: [
+                {
+                  label: 'Patrimônio acumulado',
+                  data: patrimonyHistory.map(d => d.cumulative),
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  fill: true,
+                  tension: 0.3,
+                  yAxisID: 'y'
+                },
+                {
+                  label: 'Líquido mês',
+                  data: patrimonyHistory.map(d => d.net),
+                  borderColor: '#6366f1',
+                  backgroundColor: 'rgba(99, 102, 241, 0)',
+                  tension: 0.3,
+                  yAxisID: 'y'
+                }
+              ]
+            }}
+            options={{
+              responsive: true,
+              plugins: { legend: { position: 'bottom' } },
+              scales: { y: { ticks: { callback: v => fmt(v) } } }
+            }}
+          />
         </div>
       )}
 
