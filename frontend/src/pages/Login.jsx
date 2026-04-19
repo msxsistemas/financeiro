@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../api'
@@ -6,6 +6,21 @@ import api from '../api'
 export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
+  const formRef = useRef(null)
+
+  // Anti-autofill: após montar, garante que os campos estão vazios
+  // (Chrome pode auto-preencher mesmo com value="" controlado)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const inputs = formRef.current?.querySelectorAll('input')
+      inputs?.forEach(i => {
+        if (i.value && !form.email && !form.password) {
+          i.value = ''
+        }
+      })
+    }, 100)
+    return () => clearTimeout(t)
+  }, [])
   const [totpCode, setTotpCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [requires2fa, setRequires2fa] = useState(false)
@@ -56,14 +71,20 @@ export default function Login() {
           <p className="text-gray-500 text-sm mt-1">Gestão financeira inteligente</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           {!requires2fa ? (
             <>
+              {/* honeypot para enganar o autofill do Chrome */}
+              <input type="text" name="fake_username" style={{ display: 'none' }} autoComplete="username" readOnly tabIndex={-1} />
+              <input type="password" name="fake_password" style={{ display: 'none' }} autoComplete="current-password" readOnly tabIndex={-1} />
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
+                  name="fin_login_email"
                   required
+                  autoComplete="off"
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -74,7 +95,9 @@ export default function Login() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
                 <input
                   type="password"
+                  name="fin_login_pw"
                   required
+                  autoComplete="new-password"
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
