@@ -34,6 +34,7 @@ import transactionsRoutes from './routes/transactions.js'
 import productsRoutes from './routes/products.js'
 import trashRoutes, { purgeOldTrash } from './routes/trash.js'
 import adminRoutes from './routes/admin.js'
+import historyRoutes from './routes/history.js'
 
 const app = Fastify({
   logger: { level: 'info' },
@@ -184,6 +185,7 @@ await app.register(transactionsRoutes, { prefix: '/api/transactions' })
 await app.register(productsRoutes, { prefix: '/api/products' })
 await app.register(trashRoutes, { prefix: '/api/trash' })
 await app.register(adminRoutes, { prefix: '/api/admin' })
+await app.register(historyRoutes, { prefix: '/api/history' })
 
 // Health check
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))

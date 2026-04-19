@@ -30,6 +30,7 @@ const Products = lazy(() => import('./pages/Products'))
 const Categories = lazy(() => import('./pages/Categories'))
 const Trash = lazy(() => import('./pages/Trash'))
 const Admin = lazy(() => import('./pages/Admin'))
+const History = lazy(() => import('./pages/History'))
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('fin_token')
@@ -70,6 +71,7 @@ export default function App() {
               <Route path="iptv/expenses" element={<IPTVExpenses />} />
               <Route path="iptv/:subtab" element={<IPTV />} />
               <Route path="trash" element={<Trash />} />
+              <Route path="history" element={<History />} />
               <Route path="admin" element={<Admin />} />
               <Route path="settings" element={<Settings />} />
             </Route>

@@ -33,6 +33,7 @@ const navItems = [
   { path: '/loans', icon: 'loans', label: 'Empréstimos' },
   { path: '/delinquents', icon: 'delinquents', label: 'Inadimplentes' },
   { path: '/whatsapp-log', icon: 'inbox', label: 'Log WhatsApp' },
+  { path: '/history', icon: 'clock', label: 'Histórico' },
   { path: '/trash', icon: 'trash', label: 'Lixeira' },
   { path: '/admin', icon: 'shield', label: 'Admin', adminOnly: true },
   { path: '/settings', icon: 'settings', label: 'Configurações' },
