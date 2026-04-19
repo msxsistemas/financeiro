@@ -9,18 +9,24 @@ export default function Login() {
   const [forgotOpen, setForgotOpen] = useState(false)
   const formRef = useRef(null)
 
-  // Anti-autofill: após montar, garante que os campos estão vazios
-  // (Chrome pode auto-preencher mesmo com value="" controlado)
+  // Anti-autofill: Chrome autopreenche mesmo com value="" controlado
+  // Monitora por 1s e limpa qualquer valor que apareça sem o usuário digitar
   useEffect(() => {
-    const t = setTimeout(() => {
-      const inputs = formRef.current?.querySelectorAll('input')
-      inputs?.forEach(i => {
+    let stopped = false
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    const clear = () => {
+      if (stopped) return
+      const inputs = formRef.current?.querySelectorAll('input[name^="fin_login_"]') || []
+      inputs.forEach(i => {
         if (i.value && !form.email && !form.password) {
-          i.value = ''
+          setter.call(i, '')
+          i.dispatchEvent(new Event('input', { bubbles: true }))
         }
       })
-    }, 100)
-    return () => clearTimeout(t)
+    }
+    const timers = [setTimeout(clear, 50), setTimeout(clear, 200), setTimeout(clear, 500), setTimeout(clear, 1000)]
+    return () => { stopped = true; timers.forEach(clearTimeout) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [totpCode, setTotpCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -144,15 +150,10 @@ export default function Login() {
         </form>
 
         {!requires2fa && (
-          <>
-            <button type="button" onClick={() => setForgotOpen(true)}
-              className="w-full mt-3 text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
-              Esqueceu a senha?
-            </button>
-            <p className="text-center text-xs text-gray-400 mt-6">
-              Login padrão: admin@financeiro.com / admin123
-            </p>
-          </>
+          <button type="button" onClick={() => setForgotOpen(true)}
+            className="w-full mt-3 text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
+            Esqueceu a senha?
+          </button>
         )}
       </div>
 
