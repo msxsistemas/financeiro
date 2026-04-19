@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import Icon from './Icon'
 
@@ -48,10 +48,26 @@ export default function Sidebar() {
   const [openMenus, setOpenMenus] = useState(() => {
     const open = {}
     visibleNav.forEach(item => {
-      if (item.children && location.pathname === item.path) open[item.path] = true
+      if (item.children && (location.pathname === item.path || location.pathname.startsWith(item.path + '/'))) {
+        open[item.path] = true
+      }
     })
     return open
   })
+
+  // Ao navegar para uma rota filha, abre o menu correspondente automaticamente
+  // (mas só registra o último pathname para não reabrir após fechar manualmente)
+  const lastPath = useRef(location.pathname)
+  useEffect(() => {
+    if (lastPath.current === location.pathname) return
+    lastPath.current = location.pathname
+    for (const item of visibleNav) {
+      if (item.children && location.pathname.startsWith(item.path + '/')) {
+        setOpenMenus(prev => prev[item.path] ? prev : { ...prev, [item.path]: true })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   const toggleMenu = (path) => {
     setOpenMenus(prev => ({ ...prev, [path]: !prev[path] }))
@@ -78,7 +94,7 @@ export default function Sidebar() {
         const isActive = item.exact
           ? location.pathname === item.path
           : location.pathname === item.path || location.pathname.startsWith(item.path + '/')
-        const isOpen = openMenus[item.path] || (item.children && isActive)
+        const isOpen = !!openMenus[item.path]
 
         if (item.children) {
           return (
