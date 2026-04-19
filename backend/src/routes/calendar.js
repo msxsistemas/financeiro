@@ -31,6 +31,46 @@ export default async function calendarRoutes(app) {
     return { ok: true }
   })
 
+  // Enviar lembrete imediato de um agendamento
+  app.post('/:id/notify', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.id
+    const { id } = request.params
+    const r = await query(`
+      SELECT ce.*, ws.instance_token, u.calendar_default_message AS user_default_message
+      FROM calendar_events ce
+      JOIN users u ON u.id = ce.user_id
+      LEFT JOIN whatsapp_settings ws ON ws.user_id = ce.user_id
+      WHERE ce.id = $1 AND ce.user_id = $2
+    `, [id, userId])
+    const ev = r.rows[0]
+    if (!ev) return reply.code(404).send({ error: 'Agendamento não encontrado' })
+    if (!ev.notify_phone) return reply.code(400).send({ error: 'Agendamento sem telefone' })
+    if (!ev.instance_token) return reply.code(400).send({ error: 'WhatsApp não conectado' })
+
+    const d = new Date(ev.start_date)
+    const data = d.toLocaleDateString('pt-BR')
+    const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    const template = ev.custom_message || ev.user_default_message
+    const descSuffix = ev.description ? '\n📝 ' + ev.description : ''
+    const message = template
+      ? template
+          .replace(/\{titulo\}/g, ev.title || '')
+          .replace(/\{data\}/g, data)
+          .replace(/\{hora\}/g, hora)
+          .replace(/\{descricao\}/g, descSuffix)
+      : `🔔 *Lembrete:* ${ev.title}\n📅 ${data} às ${hora}${descSuffix}`
+
+    try {
+      await axios.post(`${process.env.UAZAPI_URL}/send/text`, {
+        number: ev.notify_phone.replace(/\D/g, ''),
+        text: message
+      }, { headers: { token: ev.instance_token }, timeout: 15000 })
+      return { ok: true }
+    } catch (err) {
+      return reply.code(500).send({ error: err.response?.data?.error || err.message })
+    }
+  })
+
   // Listar eventos
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id

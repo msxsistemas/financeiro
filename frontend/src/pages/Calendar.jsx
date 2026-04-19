@@ -9,7 +9,7 @@ import api from '../api'
 const defaultForm = {
   title: '', description: '', start_date: '',
   notify_whatsapp: false, notify_phone: '', reminder_minutes: 30,
-  custom_message: ''
+  custom_message: '', send_now: false
 }
 
 export default function Calendar() {
@@ -90,13 +90,24 @@ export default function Calendar() {
   const handleSave = async () => {
     if (!form.title || !form.start_date) return toast.error('Título e data são obrigatórios')
     try {
-      const payload = { ...form, end_date: null }
+      const { send_now, ...rest } = form
+      const payload = { ...rest, end_date: null }
+      let savedId = editing?.id
       if (editing) {
         await api.put(`/api/calendar/${editing.id}`, payload)
         toast.success('Agendamento atualizado!')
       } else {
-        await api.post('/api/calendar', payload)
+        const { data } = await api.post('/api/calendar', payload)
+        savedId = data.id
         toast.success('Agendamento criado!')
+      }
+      if (send_now && form.notify_whatsapp && form.notify_phone && savedId) {
+        try {
+          await api.post(`/api/calendar/${savedId}/notify`)
+          toast.success('Mensagem enviada via WhatsApp!')
+        } catch (e) {
+          toast.error(e.response?.data?.error || 'Erro ao enviar WhatsApp')
+        }
       }
       setModal(false); load()
     } catch (err) { toast.error(err.response?.data?.error || 'Erro ao salvar') }
@@ -253,6 +264,11 @@ export default function Calendar() {
                     Variáveis: <code>{'{titulo}'}</code>, <code>{'{data}'}</code>, <code>{'{hora}'}</code>, <code>{'{descricao}'}</code> · vazio = usa mensagem padrão configurada
                   </p>
                 </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.send_now} onChange={e => f('send_now', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded" />
+                  <span className="text-sm text-indigo-700 dark:text-indigo-400 font-medium">🚀 Enviar mensagem agora ao salvar</span>
+                </label>
               </div>
             )}
           </div>

@@ -35,7 +35,7 @@ const defaultForm = {
   start_date: new Date().toISOString().split('T')[0],
   first_due_date: '', notes: '',
   auto_notify: false, notify_days_before: '1',
-  custom_message: ''
+  custom_message: '', send_now: false
 }
 
 export default function Loans() {
@@ -207,31 +207,49 @@ export default function Loans() {
         }
       }
 
+      const { send_now, ...rest } = form
       const payload = {
-        ...form,
-        principal_amount: parseFloat(form.principal_amount),
-        interest_rate: parseFloat(form.interest_rate),
+        ...rest,
+        principal_amount: parseFloat(rest.principal_amount),
+        interest_rate: parseFloat(rest.interest_rate),
         late_fee_rate: 0,
-        installments: parseInt(form.installments),
-        notify_days_before: parseInt(form.notify_days_before),
+        installments: parseInt(rest.installments),
+        notify_days_before: parseInt(rest.notify_days_before),
         contact_id: contactId,
         contact_name: name || null
       }
+      let createdLoan = null
       if (editing) {
         await api.put(`/api/loans/${editing.id}`, {
           contact_id: contactId,
           contact_name: name || null,
-          contact_phone: form.contact_phone || null,
-          notes: form.notes || null,
-          auto_notify: form.auto_notify,
-          notify_days_before: parseInt(form.notify_days_before),
-          custom_message: form.custom_message || null
+          contact_phone: rest.contact_phone || null,
+          notes: rest.notes || null,
+          auto_notify: rest.auto_notify,
+          notify_days_before: parseInt(rest.notify_days_before),
+          custom_message: rest.custom_message || null
         })
         toast.success('Empréstimo atualizado!')
       } else {
-        await api.post('/api/loans', payload)
+        const { data } = await api.post('/api/loans', payload)
+        createdLoan = data
         toast.success('Empréstimo criado!')
       }
+
+      // Envia cobrança imediata se solicitado (somente em criação)
+      if (send_now && createdLoan?.id && rest.contact_phone) {
+        try {
+          const { data: full } = await api.get(`/api/loans/${createdLoan.id}`)
+          const next = (full.installments_list || []).find(i => !i.paid)
+          if (next) {
+            await api.post(`/api/loans/installments/${next.id}/notify`)
+            toast.success('Mensagem enviada via WhatsApp!')
+          }
+        } catch (e) {
+          toast.error(e.response?.data?.error || 'Erro ao enviar WhatsApp')
+        }
+      }
+
       setModal(false)
       load()
     } catch (err) {
@@ -576,6 +594,15 @@ export default function Loans() {
               </div>
             )}
           </div>
+
+          {!editing && form.contact_phone && (
+            <label className="flex items-center gap-2 cursor-pointer bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-3 py-2">
+              <input type="checkbox" checked={form.send_now}
+                onChange={e => setForm(f => ({ ...f, send_now: e.target.checked }))}
+                className="w-4 h-4 text-indigo-600 rounded" />
+              <span className="text-sm text-indigo-700 dark:text-indigo-400 font-medium">🚀 Enviar cobrança da 1ª parcela agora ao criar</span>
+            </label>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
