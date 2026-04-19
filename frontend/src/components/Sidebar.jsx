@@ -70,6 +70,8 @@ export default function Sidebar() {
   const handleLogout = () => {
     localStorage.removeItem('fin_token')
     localStorage.removeItem('fin_user')
+    localStorage.removeItem('fin_onboarding_done')
+    localStorage.removeItem('fin_refresh_token')
     navigate('/login')
   }
 

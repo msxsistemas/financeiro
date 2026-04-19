@@ -25,6 +25,12 @@ export default function Login() {
         return
       }
 
+      // Limpa flags de onboarding/cache do usuário anterior
+      const prevUser = JSON.parse(localStorage.getItem('fin_user') || '{}')
+      if (prevUser.id !== data.user?.id) {
+        localStorage.removeItem('fin_onboarding_done')
+      }
+
       localStorage.setItem('fin_token', data.token)
       localStorage.setItem('fin_user', JSON.stringify(data.user))
       if (data.refresh_token) localStorage.setItem('fin_refresh_token', data.refresh_token)

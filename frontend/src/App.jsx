@@ -37,8 +37,12 @@ const History = lazy(() => import('./pages/History'))
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('fin_token')
+  const user = (() => { try { return JSON.parse(localStorage.getItem('fin_user') || '{}') } catch { return {} } })()
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    return !localStorage.getItem('fin_onboarding_done') && !!localStorage.getItem('fin_token')
+    // Só mostra onboarding se o usuário não deve trocar senha
+    return !localStorage.getItem('fin_onboarding_done')
+      && !!localStorage.getItem('fin_token')
+      && !user.must_change_password
   })
   if (!token) return <Navigate to="/login" replace />
   if (showOnboarding) return <Onboarding onComplete={() => { localStorage.setItem('fin_onboarding_done', '1'); setShowOnboarding(false) }} />

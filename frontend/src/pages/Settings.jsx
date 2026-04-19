@@ -77,6 +77,13 @@ export default function Settings() {
       })
       toast.success('Senha alterada com sucesso!')
       setPwForm({ current_password: '', new_password: '', confirm: '' })
+      // Limpa a flag no user cached — libera onboarding/navegação normal
+      const u = JSON.parse(localStorage.getItem('fin_user') || '{}')
+      localStorage.setItem('fin_user', JSON.stringify({ ...u, must_change_password: false }))
+      if (forcePassword) {
+        // Já pode ir para o dashboard
+        window.location.href = '/'
+      }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erro ao alterar senha')
     } finally { setPwLoading(false) }
