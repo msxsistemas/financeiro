@@ -35,7 +35,6 @@ const navItems = [
   { path: '/whatsapp-log', icon: 'inbox', label: 'Log WhatsApp' },
   { path: '/history', icon: 'clock', label: 'Histórico' },
   { path: '/trash', icon: 'trash', label: 'Lixeira' },
-  { path: '/admin', icon: 'shield', label: 'Admin', adminOnly: true },
   { path: '/settings', icon: 'settings', label: 'Configurações' },
 ]
 
@@ -181,6 +180,13 @@ export default function Sidebar() {
               <NavContent onNavClick={() => setMobileOpen(false)} />
             </nav>
             <div className="border-t border-gray-700 p-4 space-y-2">
+              {currentUser.role === 'admin' && (
+                <button onClick={() => navigate('/admin')}
+                  className="flex items-center gap-3 text-red-300 hover:text-red-100 transition-colors text-sm w-full">
+                  <Icon name="shield" size={18} />
+                  <span>Painel Admin</span>
+                </button>
+              )}
               <button onClick={toggleDark}
                 className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full">
                 <Icon name={dark ? 'sun' : 'moon'} size={18} />
@@ -216,8 +222,15 @@ export default function Sidebar() {
           <NavContent />
         </nav>
 
-        {/* Rodapé: dark mode + logout */}
+        {/* Rodapé: admin + dark mode + logout */}
         <div className="border-t border-gray-700 p-4 space-y-1">
+          {currentUser.role === 'admin' && (
+            <button onClick={() => navigate('/admin')}
+              className="flex items-center gap-3 text-red-300 hover:text-red-100 transition-colors text-sm w-full px-0 py-2">
+              <Icon name="shield" size={18} className="shrink-0" />
+              {!collapsed && <span>Painel Admin</span>}
+            </button>
+          )}
           <button onClick={toggleDark}
             className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full px-0 py-2">
             <Icon name={dark ? 'sun' : 'moon'} size={18} className="shrink-0" />

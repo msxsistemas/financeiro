@@ -4,6 +4,7 @@ import { useState, lazy, Suspense } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
+import AdminLayout from './components/AdminLayout'
 import Onboarding from './components/Onboarding'
 import LoadingSpinner from './components/LoadingSpinner'
 
@@ -29,7 +30,9 @@ const Expenses = lazy(() => import('./pages/Expenses'))
 const Products = lazy(() => import('./pages/Products'))
 const Categories = lazy(() => import('./pages/Categories'))
 const Trash = lazy(() => import('./pages/Trash'))
-const Admin = lazy(() => import('./pages/Admin'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminActivity = lazy(() => import('./pages/admin/AdminActivity'))
 const History = lazy(() => import('./pages/History'))
 
 function PrivateRoute({ children }) {
@@ -72,9 +75,16 @@ export default function App() {
               <Route path="iptv/:subtab" element={<IPTV />} />
               <Route path="trash" element={<Trash />} />
               <Route path="history" element={<History />} />
-              <Route path="admin" element={<Admin />} />
               <Route path="settings" element={<Settings />} />
             </Route>
+
+            {/* Painel Admin — layout totalmente separado */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="activity" element={<AdminActivity />} />
+            </Route>
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
