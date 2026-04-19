@@ -126,6 +126,27 @@ export default function Loans() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      let contactId = form.contact_id || null
+      const name = (form.contact_name || contactSearch || '').trim()
+
+      // Se tem nome mas não está vinculado a contato, cria (ou reusa por match de nome)
+      if (!contactId && name) {
+        const existing = contacts.find(c => c.name?.trim().toLowerCase() === name.toLowerCase())
+        if (existing) {
+          contactId = existing.id
+        } else {
+          try {
+            const { data: created } = await api.post('/api/contacts', {
+              name,
+              phone: form.contact_phone || null,
+              type: 'client'
+            })
+            contactId = created.id
+            setContacts(prev => [...prev, created])
+          } catch { /* silencioso — segue sem vincular */ }
+        }
+      }
+
       await api.post('/api/loans', {
         ...form,
         principal_amount: parseFloat(form.principal_amount),
@@ -133,7 +154,8 @@ export default function Loans() {
         late_fee_rate: 0,
         installments: parseInt(form.installments),
         notify_days_before: parseInt(form.notify_days_before),
-        contact_id: form.contact_id || null
+        contact_id: contactId,
+        contact_name: name || null
       })
       toast.success('Empréstimo criado!')
       setModal(false)
@@ -314,17 +336,40 @@ export default function Loans() {
       {/* Modal criar */}
       <Modal open={modal} onClose={() => setModal(false)} title="Novo Empréstimo">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Contato */}
+          {/* Nome do devedor (busca em contatos) */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Devedor</label>
-            <input
-              value={contactSearch}
-              onChange={e => { setContactSearch(e.target.value); setShowContactList(true) }}
-              onFocus={() => setShowContactList(true)}
-              placeholder="Buscar contato ou digitar nome..."
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white"
-            />
-            {showContactList && filteredContacts.length > 0 && (
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nome {form.contact_id && <span className="text-xs text-indigo-500">· contato vinculado</span>}
+            </label>
+            <div className="relative">
+              <input
+                value={form.contact_id ? form.contact_name : contactSearch}
+                onChange={e => {
+                  const v = e.target.value
+                  if (form.contact_id) {
+                    setForm(f => ({ ...f, contact_id: '', contact_name: v, contact_phone: '' }))
+                    setContactSearch(v)
+                  } else {
+                    setContactSearch(v)
+                    setForm(f => ({ ...f, contact_name: v }))
+                  }
+                  setShowContactList(true)
+                }}
+                onFocus={() => setShowContactList(true)}
+                placeholder="Digite o nome — será buscado na agenda"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white pr-8"
+              />
+              {(contactSearch || form.contact_id) && (
+                <button type="button"
+                  onClick={() => {
+                    setForm(f => ({ ...f, contact_id: '', contact_name: '', contact_phone: '' }))
+                    setContactSearch('')
+                    setShowContactList(false)
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xs">✕</button>
+              )}
+            </div>
+            {showContactList && !form.contact_id && contactSearch.length > 0 && filteredContacts.length > 0 && (
               <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                 {filteredContacts.map(c => (
                   <div key={c.id} className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-sm"
@@ -341,20 +386,15 @@ export default function Loans() {
             )}
           </div>
 
+          {/* Telefone — aparece se NÃO é contato já vinculado */}
           {!form.contact_id && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome</label>
-                <input value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))}
-                  placeholder="Nome do devedor"
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
-                <MaskedInput mask="phone" value={form.contact_phone} onValueChange={v => setForm(f => ({ ...f, contact_phone: v }))}
-                  placeholder="(11) 99999-9999"
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Telefone <span className="text-xs text-gray-400">· será criado um novo contato ao salvar</span>
+              </label>
+              <MaskedInput mask="phone" value={form.contact_phone} onValueChange={v => setForm(f => ({ ...f, contact_phone: v }))}
+                placeholder="(11) 99999-9999"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
             </div>
           )}
 
