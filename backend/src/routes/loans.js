@@ -277,24 +277,91 @@ export default async function loansRoutes(app) {
   app.put('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const { id } = request.params
     const userId = request.user.id
-    const { contact_id, contact_name, contact_phone, notes, auto_notify, notify_days_before, status, custom_message } = request.body
+    const {
+      contact_id, contact_name, contact_phone, notes,
+      auto_notify, notify_days_before, status, custom_message,
+      principal_amount, interest_rate, interest_type, frequency,
+      installments, start_date, first_due_date
+    } = request.body
+
+    const curRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
+    if (!curRes.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
+    const current = curRes.rows[0]
+
+    // Detecta se algum parâmetro que gera parcelas foi alterado
+    const normDate = (d) => d instanceof Date ? d.toISOString().substring(0, 10) : (d ? String(d).substring(0, 10) : null)
+    const financialChanged =
+      (principal_amount != null && parseFloat(principal_amount) !== parseFloat(current.principal_amount)) ||
+      (interest_rate != null && parseFloat(interest_rate) !== parseFloat(current.interest_rate)) ||
+      (interest_type != null && interest_type !== current.interest_type) ||
+      (frequency != null && frequency !== current.frequency) ||
+      (installments != null && parseInt(installments) !== parseInt(current.installments)) ||
+      (first_due_date != null && normDate(first_due_date) !== normDate(current.first_due_date)) ||
+      (start_date != null && normDate(start_date) !== normDate(current.start_date))
+
+    if (financialChanged) {
+      const paidRes = await query(
+        'SELECT COUNT(*)::int AS c FROM loan_installments WHERE loan_id = $1 AND (paid = true OR paid_amount > 0)',
+        [id]
+      )
+      if (paidRes.rows[0].c > 0) {
+        return reply.code(400).send({
+          error: 'Existem parcelas com pagamento registrado — não é possível alterar valor, juros, parcelas ou datas. Edite apenas dados do contato e observações.'
+        })
+      }
+    }
 
     const res = await query(`
       UPDATE loans SET
-        contact_id = COALESCE($1, contact_id),
+        contact_id = $1,
         contact_name = COALESCE($2, contact_name),
         contact_phone = COALESCE($3, contact_phone),
-        notes = COALESCE($4, notes),
+        notes = $4,
         auto_notify = COALESCE($5, auto_notify),
         notify_days_before = COALESCE($6, notify_days_before),
         status = COALESCE($7, status),
-        custom_message = COALESCE($8, custom_message)
-      WHERE id = $9 AND user_id = $10 AND deleted_at IS NULL
+        custom_message = $8,
+        principal_amount = COALESCE($9, principal_amount),
+        interest_rate = COALESCE($10, interest_rate),
+        interest_type = COALESCE($11, interest_type),
+        frequency = COALESCE($12, frequency),
+        installments = COALESCE($13, installments),
+        start_date = COALESCE($14, start_date),
+        first_due_date = COALESCE($15, first_due_date)
+      WHERE id = $16 AND user_id = $17 AND deleted_at IS NULL
       RETURNING *
-    `, [contact_id || null, contact_name, contact_phone, notes, auto_notify, notify_days_before, status, custom_message, id, userId])
+    `, [
+      contact_id ?? null,
+      contact_name, contact_phone,
+      notes ?? null,
+      auto_notify, notify_days_before, status,
+      custom_message ?? null,
+      principal_amount ?? null,
+      interest_rate ?? null,
+      interest_type ?? null,
+      frequency ?? null,
+      installments ?? null,
+      start_date ?? null,
+      first_due_date ?? null,
+      id, userId
+    ])
 
-    if (!res.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
-    return res.rows[0]
+    const loan = res.rows[0]
+
+    if (financialChanged) {
+      await query('DELETE FROM loan_installments WHERE loan_id = $1', [id])
+      const parcelas = generateInstallments(loan)
+      for (const p of parcelas) {
+        await query(`
+          INSERT INTO loan_installments
+            (loan_id, installment_number, due_date, principal_amount, interest_amount, late_fee_amount, total_amount, user_id)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        `, [p.loan_id, p.installment_number, p.due_date, p.principal_amount, p.interest_amount, p.late_fee_amount, p.total_amount, p.user_id])
+      }
+    }
+
+    await logActivity(userId, 'LOAN_UPDATE', 'loan', loan.id, `Empréstimo atualizado: ${loan.contact_name}`)
+    return loan
   })
 
   // Deletar empréstimo

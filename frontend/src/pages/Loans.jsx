@@ -230,12 +230,10 @@ export default function Loans() {
       let createdLoan = null
       if (editing) {
         await api.put(`/api/loans/${editing.id}`, {
-          contact_id: contactId,
-          contact_name: name || null,
-          contact_phone: rest.contact_phone || null,
+          ...payload,
+          start_date: rest.start_date || null,
+          first_due_date: rest.first_due_date || null,
           notes: rest.notes || null,
-          auto_notify: rest.auto_notify,
-          notify_days_before: parseInt(rest.notify_days_before),
           custom_message: rest.custom_message || null
         })
         toast.success('Empréstimo atualizado!')
@@ -630,7 +628,7 @@ export default function Loans() {
               Cancelar
             </button>
             <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium">
-              Criar Empréstimo
+              {editing ? 'Salvar Alterações' : 'Criar Empréstimo'}
             </button>
           </div>
         </form>
