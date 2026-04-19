@@ -45,3 +45,6 @@ backend/backups/
 .playwright-mcp/
 mobile-*.png
 desktop-*.png
+admin-*.png
+after-*.png
+force-*.png
