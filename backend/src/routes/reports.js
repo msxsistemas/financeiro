@@ -3,6 +3,60 @@ import PDFDocument from 'pdfkit'
 
 export default async function reportsRoutes(app) {
 
+  // Export CSV consolidado (transações + dívidas + empréstimos) do período
+  app.get('/export/consolidated', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.id
+    const { start_date, end_date } = request.query
+    const s = start_date || '1900-01-01'
+    const e = end_date || '9999-12-31'
+
+    const tx = await query(`
+      SELECT 'transaction' AS origem, t.id::text AS id, t.description, t.type,
+        t.amount, COALESCE(c.name,'') AS categoria, COALESCE(t.status,'') AS status,
+        t.due_date, t.paid_date, COALESCE(t.cost_center,'') AS cost_center
+      FROM transactions t
+      LEFT JOIN categories c ON c.id = t.category_id
+      WHERE t.user_id = $1 AND COALESCE(t.paid_date, t.due_date) BETWEEN $2 AND $3
+    `, [userId, s, e])
+
+    const dbs = await query(`
+      SELECT 'debt' AS origem, id::text, description, type,
+        amount, '' AS categoria, status, due_date, NULL AS paid_date, '' AS cost_center
+      FROM debts
+      WHERE user_id = $1 AND due_date BETWEEN $2 AND $3
+    `, [userId, s, e])
+
+    const loans = await query(`
+      SELECT 'loan_installment' AS origem, li.id::text,
+        ('Parcela ' || li.installment_number || ' de ' || COALESCE(l.contact_name,'-')) AS description,
+        CASE WHEN li.paid THEN 'paid' ELSE 'pending' END AS type,
+        li.total_amount AS amount, '' AS categoria,
+        CASE WHEN li.paid THEN 'paid' ELSE 'pending' END AS status,
+        li.due_date, li.paid_at AS paid_date, '' AS cost_center
+      FROM loan_installments li
+      JOIN loans l ON l.id = li.loan_id
+      WHERE li.user_id = $1 AND li.due_date BETWEEN $2 AND $3
+    `, [userId, s, e])
+
+    const all = [...tx.rows, ...dbs.rows, ...loans.rows]
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+
+    const header = ['Origem', 'ID', 'Descrição', 'Tipo', 'Valor', 'Categoria', 'Status', 'Vencimento', 'Pagamento', 'Centro de Custo']
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const rows = all.map(r => [
+      r.origem, r.id, r.description, r.type, parseFloat(r.amount).toFixed(2),
+      r.categoria, r.status,
+      r.due_date ? String(r.due_date).substring(0, 10) : '',
+      r.paid_date ? String(r.paid_date).substring(0, 10) : '',
+      r.cost_center
+    ].map(escape).join(','))
+    const csv = '\uFEFF' + [header.map(escape).join(','), ...rows].join('\n')
+
+    reply.header('Content-Type', 'text/csv; charset=utf-8')
+    reply.header('Content-Disposition', `attachment; filename="financeiro_${s}_${e}.csv"`)
+    return csv
+  })
+
   // DRE - Demonstração de Resultados do Mês
   app.get('/dre', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id

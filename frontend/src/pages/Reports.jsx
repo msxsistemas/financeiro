@@ -319,6 +319,24 @@ export default function Reports() {
               {pdfLoading ? '⏳ Gerando...' : '📄 Exportar PDF'}
             </button>
           )}
+          <button
+            onClick={async () => {
+              const token = localStorage.getItem('fin_token')
+              const baseUrl = import.meta.env.VITE_API_URL || 'https://apifinanceiro.msxsystem.site'
+              const start = `${year}-${String(month).padStart(2, '0')}-01`
+              const endD = new Date(year, month, 0).toISOString().split('T')[0]
+              try {
+                const res = await fetch(`${baseUrl}/api/reports/export/consolidated?start_date=${start}&end_date=${endD}`, { headers: { Authorization: `Bearer ${token}` } })
+                if (!res.ok) { toast.error('Erro ao exportar CSV'); return }
+                const blob = await res.blob()
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a'); a.href = url; a.download = `financeiro_${start}_${endD}.csv`; a.click()
+                URL.revokeObjectURL(url)
+              } catch { toast.error('Erro ao baixar CSV') }
+            }}
+            className="border border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 px-3 py-2 rounded-lg text-sm font-medium">
+            📥 CSV consolidado
+          </button>
         </div>
       </div>
 

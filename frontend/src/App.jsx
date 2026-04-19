@@ -1,28 +1,33 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { useState, useEffect } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
-import Login from './pages/Login'
 import Layout from './components/Layout'
 import Onboarding from './components/Onboarding'
-import Dashboard from './pages/Dashboard'
-import Debts from './pages/Debts'
-import WhatsApp from './pages/WhatsApp'
-import Calendar from './pages/Calendar'
-import Reports from './pages/Reports'
-import Settings from './pages/Settings'
-import Contacts from './pages/Contacts'
-import Goals from './pages/Goals'
-import Loans from './pages/Loans'
-import Delinquents from './pages/Delinquents'
-import WhatsAppLog from './pages/WhatsAppLog'
-import IPTV from './pages/IPTV'
-import IPTVDebts from './pages/IPTVDebts'
-import IPTVExpenses from './pages/IPTVExpenses'
-import Expenses from './pages/Expenses'
-import Products from './pages/Products'
-import Categories from './pages/Categories'
+import LoadingSpinner from './components/LoadingSpinner'
+
+// Login é síncrono (rota pública, first paint)
+import Login from './pages/Login'
+
+// Resto: code-split por rota
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Debts = lazy(() => import('./pages/Debts'))
+const WhatsApp = lazy(() => import('./pages/WhatsApp'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Contacts = lazy(() => import('./pages/Contacts'))
+const Goals = lazy(() => import('./pages/Goals'))
+const Loans = lazy(() => import('./pages/Loans'))
+const Delinquents = lazy(() => import('./pages/Delinquents'))
+const WhatsAppLog = lazy(() => import('./pages/WhatsAppLog'))
+const IPTV = lazy(() => import('./pages/IPTV'))
+const IPTVDebts = lazy(() => import('./pages/IPTVDebts'))
+const IPTVExpenses = lazy(() => import('./pages/IPTVExpenses'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const Products = lazy(() => import('./pages/Products'))
+const Categories = lazy(() => import('./pages/Categories'))
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('fin_token')
@@ -40,32 +45,33 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={<Dashboard />} />
-            <Route path="debts" element={<Debts />} />
-            <Route path="debts/:subtab" element={<Debts />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="whatsapp" element={<WhatsApp />} />
-            <Route path="contacts" element={<Contacts />} />
-
-            <Route path="goals" element={<Goals />} />
-            <Route path="expenses" element={<Expenses />} />
-            <Route path="products" element={<Products />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="loans" element={<Loans />} />
-            <Route path="delinquents" element={<Delinquents />} />
-            <Route path="whatsapp-log" element={<WhatsAppLog />} />
-            <Route path="iptv" element={<IPTV />} />
-            <Route path="iptv/debts" element={<IPTVDebts />} />
-            <Route path="iptv/expenses" element={<IPTVExpenses />} />
-            <Route path="iptv/:subtab" element={<IPTV />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner /></div>}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="debts" element={<Debts />} />
+              <Route path="debts/:subtab" element={<Debts />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="whatsapp" element={<WhatsApp />} />
+              <Route path="contacts" element={<Contacts />} />
+              <Route path="goals" element={<Goals />} />
+              <Route path="expenses" element={<Expenses />} />
+              <Route path="products" element={<Products />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="loans" element={<Loans />} />
+              <Route path="delinquents" element={<Delinquents />} />
+              <Route path="whatsapp-log" element={<WhatsAppLog />} />
+              <Route path="iptv" element={<IPTV />} />
+              <Route path="iptv/debts" element={<IPTVDebts />} />
+              <Route path="iptv/expenses" element={<IPTVExpenses />} />
+              <Route path="iptv/:subtab" element={<IPTV />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
     </ErrorBoundary>

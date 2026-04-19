@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import Sidebar from './Sidebar'
+import CommandPalette from './CommandPalette'
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -42,6 +43,7 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+      <CommandPalette />
     </div>
   )
 }

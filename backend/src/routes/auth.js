@@ -5,8 +5,16 @@ import QRCode from 'qrcode'
 import { query, logActivity } from '../db/index.js'
 
 export default async function authRoutes(app) {
-  // Login (com suporte a 2FA)
-  app.post('/login', async (request, reply) => {
+  // Login (com suporte a 2FA) — rate limit forte anti-bruteforce
+  app.post('/login', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+        keyGenerator: (req) => `login_${req.ip}_${(req.body?.email || '').toLowerCase()}`
+      }
+    }
+  }, async (request, reply) => {
     const { email, password, totp_code } = request.body
 
     if (!email || !password) {
