@@ -22,18 +22,15 @@ const Contacts = lazy(() => import('./pages/Contacts'))
 const Goals = lazy(() => import('./pages/Goals'))
 const Loans = lazy(() => import('./pages/Loans'))
 const Delinquents = lazy(() => import('./pages/Delinquents'))
-const WhatsAppLog = lazy(() => import('./pages/WhatsAppLog'))
 const IPTV = lazy(() => import('./pages/IPTV'))
 const IPTVDebts = lazy(() => import('./pages/IPTVDebts'))
 const IPTVExpenses = lazy(() => import('./pages/IPTVExpenses'))
 const Expenses = lazy(() => import('./pages/Expenses'))
 const Products = lazy(() => import('./pages/Products'))
 const Categories = lazy(() => import('./pages/Categories'))
-const Trash = lazy(() => import('./pages/Trash'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity'))
-const History = lazy(() => import('./pages/History'))
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('fin_token')
@@ -72,13 +69,10 @@ export default function App() {
               <Route path="categories" element={<Categories />} />
               <Route path="loans" element={<Loans />} />
               <Route path="delinquents" element={<Delinquents />} />
-              <Route path="whatsapp-log" element={<WhatsAppLog />} />
               <Route path="iptv" element={<IPTV />} />
               <Route path="iptv/debts" element={<IPTVDebts />} />
               <Route path="iptv/expenses" element={<IPTVExpenses />} />
               <Route path="iptv/:subtab" element={<IPTV />} />
-              <Route path="trash" element={<Trash />} />
-              <Route path="history" element={<History />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

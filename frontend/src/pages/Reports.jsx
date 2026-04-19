@@ -342,7 +342,7 @@ export default function Reports() {
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 gap-1 overflow-x-auto">
-        {[['dre', '📊 DRE'], ['annual', '📅 Anual'], ['fiscal', '🧾 Fiscal'], ['cashflow', '💧 Fluxo de Caixa'], ['budgets', '🎯 Metas'], ['planning', '📋 Planejamento'], ['patrimony', '🏦 Patrimônio'], ['products', '📦 Produtos']].map(([key, label]) => (
+        {[['dre', '📊 DRE'], ['annual', '📅 Anual'], ['cashflow', '💧 Fluxo de Caixa'], ['budgets', '🎯 Metas'], ['planning', '📋 Planejamento'], ['patrimony', '🏦 Patrimônio'], ['products', '📦 Produtos']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === key ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             {label}

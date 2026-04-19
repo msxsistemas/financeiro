@@ -5,7 +5,7 @@ import Icon from './Icon'
 const adminNav = [
   { path: '/admin', icon: 'dashboard', label: 'Visão geral', exact: true },
   { path: '/admin/users', icon: 'contacts', label: 'Usuários' },
-  { path: '/admin/activity', icon: 'clock', label: 'Atividade' }
+  { path: '/admin/activity', icon: 'clock', label: 'Logs do sistema' }
 ]
 
 export default function AdminSidebar() {

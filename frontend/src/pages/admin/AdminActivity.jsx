@@ -19,8 +19,8 @@ export default function AdminActivity() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Log de atividade</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">{total} eventos registrados</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Logs do sistema</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">{total} eventos registrados (logins, criações, alterações, remoções e erros)</p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700">

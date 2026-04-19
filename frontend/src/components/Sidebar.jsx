@@ -17,7 +17,7 @@ const navItems = [
     children: [
       { path: '/iptv/servers', label: 'Servidores & Apps' },
       { path: '/iptv/resellers', label: 'Revendas' },
-      { path: '/iptv/my-clients', label: 'Meus Clientes' },
+      { path: '/iptv/my-clients', label: 'Meus Servidores' },
       { path: '/iptv/debts', label: 'Dívidas' },
       { path: '/iptv/expenses', label: 'Despesas' },
     ]
@@ -32,9 +32,6 @@ const navItems = [
   { path: '/goals', icon: 'goals', label: 'Metas' },
   { path: '/loans', icon: 'loans', label: 'Empréstimos' },
   { path: '/delinquents', icon: 'delinquents', label: 'Inadimplentes' },
-  { path: '/whatsapp-log', icon: 'inbox', label: 'Log WhatsApp' },
-  { path: '/history', icon: 'clock', label: 'Histórico' },
-  { path: '/trash', icon: 'trash', label: 'Lixeira' },
   { path: '/settings', icon: 'settings', label: 'Configurações' },
 ]
 

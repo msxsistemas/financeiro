@@ -17,10 +17,9 @@ const COMMANDS = [
   { label: 'Inadimplentes', path: '/delinquents', icon: '⚠️', keywords: 'inadimplentes devedores' },
   { label: 'IPTV · Servidores', path: '/iptv/servers', icon: '📺', keywords: 'iptv servidor' },
   { label: 'IPTV · Revendas', path: '/iptv/resellers', icon: '📺', keywords: 'iptv revendas' },
-  { label: 'IPTV · Meus Clientes', path: '/iptv/my-clients', icon: '📺', keywords: 'iptv clientes' },
+  { label: 'IPTV · Meus Servidores', path: '/iptv/my-clients', icon: '📺', keywords: 'iptv servidores clientes' },
   { label: 'IPTV · Dívidas', path: '/iptv/debts', icon: '📺', keywords: 'iptv divida' },
   { label: 'IPTV · Despesas', path: '/iptv/expenses', icon: '📺', keywords: 'iptv despesa' },
-  { label: 'Log WhatsApp', path: '/whatsapp-log', icon: '📩', keywords: 'log mensagens' },
   { label: 'Configurações', path: '/settings', icon: '⚙️', keywords: 'configuracoes settings' }
 ]
 

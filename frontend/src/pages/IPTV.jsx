@@ -37,7 +37,7 @@ export default function IPTV() {
   // Forms
   const [serverForm, setServerForm] = useState({ name: '', credit_value: '' })
   const [resellerForm, setResellerForm] = useState({ server_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' })
-  const [clientForm, setClientForm] = useState({ server_id: '', name: '', phone: '', credit_quantity: '1', sell_value: '', notes: '' })
+  const [clientForm, setClientForm] = useState({ server_id: '', credit_quantity: '1', notes: '' })
 
   // Filtros
   const [filterServer, setFilterServer] = useState('')
@@ -87,13 +87,20 @@ export default function IPTV() {
   }
 
   // ── My Client CRUD
-  const openNewClient = () => { setEditItem(null); setClientForm({ server_id: '', name: '', phone: '', credit_quantity: '1', sell_value: '', notes: '' }); setClientModal(true) }
-  const openEditClient = c => { setEditItem(c); setClientForm({ server_id: String(c.server_id || ''), name: c.name, phone: c.phone || '', credit_quantity: String(c.credit_quantity || 1), sell_value: c.sell_value || '', notes: c.notes || '' }); setClientModal(true) }
+  const openNewClient = () => { setEditItem(null); setClientForm({ server_id: '', credit_quantity: '1', notes: '' }); setClientModal(true) }
+  const openEditClient = c => { setEditItem(c); setClientForm({ server_id: String(c.server_id || ''), credit_quantity: String(c.credit_quantity || 1), notes: c.notes || '' }); setClientModal(true) }
   const saveClient = async () => {
-    if (!clientForm.name || !clientForm.server_id) return toast.error('Nome e servidor obrigatorios')
+    if (!clientForm.server_id) return toast.error('Selecione um servidor')
     setSaving(true)
     try {
-      const p = { ...clientForm, credit_quantity: parseInt(clientForm.credit_quantity) || 1, sell_value: parseFloat(clientForm.sell_value) || 0 }
+      const srv = servers.find(s => String(s.id) === String(clientForm.server_id))
+      const p = {
+        server_id: clientForm.server_id,
+        name: srv?.name || 'Servidor',
+        credit_quantity: parseInt(clientForm.credit_quantity) || 1,
+        sell_value: 0,
+        notes: clientForm.notes || null
+      }
       if (editItem) await api.put(`/api/iptv/my-clients/${editItem.id}`, p)
       else await api.post('/api/iptv/my-clients', p)
       toast.success('Salvo!'); setClientModal(false); load()
@@ -137,8 +144,9 @@ export default function IPTV() {
             <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{stats.total_resellers}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Meus Clientes</p>
-            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.total_my_clients}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Meus Servidores</p>
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{myClients.length}</p>
+            <p className="text-xs text-gray-400">{stats.total_my_clients} clientes</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400">Faturamento</p>
@@ -252,54 +260,45 @@ export default function IPTV() {
       {/* ══════ TAB: MEUS CLIENTES ══════ */}
       {tab === 'my-clients' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center gap-3 flex-wrap">
-            <select value={filterServer} onChange={e => setFilterServer(e.target.value)}
-              className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
-              <option value="">Todos os servidores</option>
-              {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <button onClick={openNewClient} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Cliente</button>
+          <div className="flex justify-end">
+            <button onClick={openNewClient} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Servidor</button>
           </div>
-          {filteredClients.length === 0 ? (
+          {myClients.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
-              <p className="text-4xl mb-3">👤</p>
-              <p className="text-gray-400">Nenhum cliente direto</p>
+              <p className="text-4xl mb-3">📺</p>
+              <p className="text-gray-400">Nenhum servidor cadastrado</p>
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
-              <table className="w-full text-sm min-w-[600px]">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead>
                   <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Cliente</th>
                     <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Servidor</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Valor Venda</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Custo</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Lucro</th>
-                    <th className="text-center px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Status</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Acoes</th>
+                    <th className="text-center px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Clientes</th>
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Observações</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredClients.map(c => (
+                  {myClients.map(c => (
                     <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-4 py-3"><p className="font-medium text-gray-800 dark:text-white">{c.name}</p>{c.phone && <p className="text-xs text-gray-400">{c.phone}</p>}</td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.server_name || '—'}</td>
-                      <td className="px-4 py-3 text-right font-medium text-green-600">{fmt(c.sell_value)}</td>
-                      <td className="px-4 py-3 text-right text-red-500">{fmt(c.server_credit_value)}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${c.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(c.profit)}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
-                          {c.status === 'active' ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-800 dark:text-white">{c.server_name || '—'}</td>
+                      <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400">{c.credit_quantity || 0}</td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs truncate max-w-xs">{c.notes || '—'}</td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => openEditClient(c)} className="text-indigo-500 hover:text-indigo-700 mr-2 text-xs">✏️</button>
-                        <button onClick={() => setConfirmDelete({ type: 'my-clients', id: c.id, name: c.name })} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
+                        <button onClick={() => setConfirmDelete({ type: 'my-clients', id: c.id, name: c.server_name || 'servidor' })} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <div className="px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 flex justify-end text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Total de clientes: </span>
+                <strong className="ml-2 text-blue-600 dark:text-blue-400">
+                  {myClients.reduce((s, c) => s + (parseInt(c.credit_quantity) || 0), 0)}
+                </strong>
+              </div>
             </div>
           )}
         </div>
@@ -379,49 +378,28 @@ export default function IPTV() {
         </div>
       </Modal>
 
-      {/* Meu Cliente */}
-      <Modal open={clientModal} onClose={() => setClientModal(false)} title={editItem ? 'Editar Cliente' : 'Novo Cliente'} size="sm">
+      {/* Meu Servidor */}
+      <Modal open={clientModal} onClose={() => setClientModal(false)} title={editItem ? 'Editar servidor' : 'Novo servidor'} size="sm">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servidor *</label>
             <select value={clientForm.server_id} onChange={e => setClientForm(p => ({ ...p, server_id: e.target.value }))}
               className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
               <option value="">Selecione</option>
-              {servers.map(s => <option key={s.id} value={s.id}>{s.name} ({fmt(s.credit_value)}/cred)</option>)}
+              {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome *</label>
-            <input value={clientForm.name} onChange={e => setClientForm(p => ({ ...p, name: e.target.value }))}
-              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="Nome do cliente" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade de clientes</label>
+            <NumberStepper value={clientForm.credit_quantity} min={0} max={99999}
+              onChange={v => setClientForm(p => ({ ...p, credit_quantity: v }))} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
-            <MaskedInput mask="phone" value={clientForm.phone} onValueChange={v => setClientForm(p => ({ ...p, phone: v }))}
-              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="(11) 99999-9999" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+            <textarea value={clientForm.notes} onChange={e => setClientForm(p => ({ ...p, notes: e.target.value }))} rows={2}
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+              placeholder="Opcional" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Qtd Créditos</label>
-              <NumberStepper value={clientForm.credit_quantity} min={1} max={999}
-                onChange={v => setClientForm(p => ({ ...p, credit_quantity: v }))} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor de Venda (R$)</label>
-              <MaskedInput mask="currency" value={clientForm.sell_value} onValueChange={v => setClientForm(p => ({ ...p, sell_value: v }))}
-                className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="0,00" />
-            </div>
-          </div>
-          {clientForm.sell_value > 0 && clientForm.server_id && (() => {
-            const sv = servers.find(s => String(s.id) === clientForm.server_id)
-            if (!sv) return null
-            const profit = parseFloat(clientForm.sell_value) - sv.credit_value
-            return (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
-                Venda: <strong>{fmt(clientForm.sell_value)}</strong> | Custo: <strong className="text-red-500">{fmt(sv.credit_value)}</strong> | Lucro: <strong>{fmt(profit)}</strong>
-              </div>
-            )
-          })()}
           <div className="flex gap-3 pt-2">
             <button onClick={() => setClientModal(false)} className="flex-1 border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm">Cancelar</button>
             <button onClick={saveClient} disabled={saving} className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-2 rounded-lg text-sm font-medium">{saving ? 'Salvando...' : 'Salvar'}</button>

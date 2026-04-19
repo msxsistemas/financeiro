@@ -38,8 +38,8 @@ export default function AdminDashboard() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-200">Últimas atividades</h3>
-          <a href="/admin/activity" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">ver todas →</a>
+          <h3 className="font-semibold text-gray-800 dark:text-gray-200">Logs recentes</h3>
+          <a href="/admin/activity" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">ver todos →</a>
         </div>
         {(stats.recent_activity || []).length === 0 ? (
           <p className="p-6 text-center text-gray-400">Sem atividade recente</p>
