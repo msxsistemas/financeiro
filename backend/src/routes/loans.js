@@ -277,19 +277,21 @@ export default async function loansRoutes(app) {
   app.put('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const { id } = request.params
     const userId = request.user.id
-    const { contact_name, contact_phone, notes, auto_notify, notify_days_before, status } = request.body
+    const { contact_id, contact_name, contact_phone, notes, auto_notify, notify_days_before, status, custom_message } = request.body
 
     const res = await query(`
       UPDATE loans SET
-        contact_name = COALESCE($1, contact_name),
-        contact_phone = COALESCE($2, contact_phone),
-        notes = COALESCE($3, notes),
-        auto_notify = COALESCE($4, auto_notify),
-        notify_days_before = COALESCE($5, notify_days_before),
-        status = COALESCE($6, status)
-      WHERE id = $7 AND user_id = $8
+        contact_id = COALESCE($1, contact_id),
+        contact_name = COALESCE($2, contact_name),
+        contact_phone = COALESCE($3, contact_phone),
+        notes = COALESCE($4, notes),
+        auto_notify = COALESCE($5, auto_notify),
+        notify_days_before = COALESCE($6, notify_days_before),
+        status = COALESCE($7, status),
+        custom_message = COALESCE($8, custom_message)
+      WHERE id = $9 AND user_id = $10
       RETURNING *
-    `, [contact_name, contact_phone, notes, auto_notify, notify_days_before, status, id, userId])
+    `, [contact_id || null, contact_name, contact_phone, notes, auto_notify, notify_days_before, status, custom_message, id, userId])
 
     if (!res.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
     return res.rows[0]

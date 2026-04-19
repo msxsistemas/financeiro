@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
+import ConfirmDialog from '../components/ConfirmDialog'
 import MaskedInput from '../components/MaskedInput'
 import NumberStepper from '../components/NumberStepper'
 import PeriodFilter, { periodRange } from '../components/PeriodFilter'
@@ -46,6 +47,10 @@ export default function Loans() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('active')
   const [period, setPeriod] = useState('all')
+  const [search, setSearch] = useState('')
+  const [editing, setEditing] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [notifyingLoan, setNotifyingLoan] = useState(null)
 
   const [modal, setModal] = useState(false)
   const [detailModal, setDetailModal] = useState(false)
@@ -66,6 +71,7 @@ export default function Loans() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ status: statusFilter, page, limit: 20 })
+      if (search) params.set('search', search)
       const range = periodRange(period)
       if (range.start_date) params.set('start_date', range.start_date)
       if (range.end_date) params.set('end_date', range.end_date)
@@ -75,7 +81,7 @@ export default function Loans() {
       setPages(data.pages)
     } catch { toast.error('Erro ao carregar empréstimos') }
     finally { setLoading(false) }
-  }, [statusFilter, page, period])
+  }, [statusFilter, page, period, search])
 
   useEffect(() => { load() }, [load])
   useEffect(() => { setPage(1) }, [statusFilter])
@@ -101,6 +107,7 @@ export default function Loans() {
   }
 
   const openCreate = () => {
+    setEditing(null)
     setForm({
       ...defaultForm,
       start_date: new Date().toISOString().split('T')[0],
@@ -108,6 +115,59 @@ export default function Loans() {
     })
     setContactSearch('')
     setModal(true)
+  }
+
+  const openEdit = (item) => {
+    setEditing(item)
+    setForm({
+      contact_id: item.contact_id || '',
+      contact_name: item.contact_name || '',
+      contact_phone: item.contact_phone || '',
+      principal_amount: item.principal_amount != null ? String(item.principal_amount) : '',
+      interest_rate: item.interest_rate != null ? String(item.interest_rate) : '0',
+      interest_type: item.interest_type || 'simple',
+      frequency: item.frequency || 'monthly',
+      installments: String(item.installments || 1),
+      start_date: item.start_date ? String(item.start_date).substring(0, 10) : new Date().toISOString().split('T')[0],
+      first_due_date: item.first_due_date ? String(item.first_due_date).substring(0, 10) : '',
+      notes: item.notes || '',
+      auto_notify: item.auto_notify || false,
+      notify_days_before: String(item.notify_days_before || 1),
+      custom_message: item.custom_message || defaultMessage || ''
+    })
+    setContactSearch(item.contact_name || '')
+    setModal(true)
+  }
+
+  const notifyLoan = async (item) => {
+    if (!item.contact_phone && !item.contact_name) {
+      toast.error('Empréstimo sem contato para cobrar')
+      return
+    }
+    setNotifyingLoan(item.id)
+    try {
+      // Busca próxima parcela em aberto
+      const { data: full } = await api.get(`/api/loans/${item.id}`)
+      const next = (full.installments_list || []).find(i => !i.paid)
+      if (!next) {
+        toast.error('Sem parcelas em aberto para cobrar')
+        return
+      }
+      await api.post(`/api/loans/installments/${next.id}/notify`)
+      toast.success('Cobrança enviada via WhatsApp!')
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erro ao enviar cobrança')
+    } finally { setNotifyingLoan(null) }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    try {
+      await api.delete(`/api/loans/${deleteConfirm.id}`)
+      toast.success('Empréstimo removido')
+      setDeleteConfirm(null)
+      load()
+    } catch { toast.error('Erro ao remover') }
   }
 
   const saveDefaultMessage = async () => {
@@ -147,7 +207,7 @@ export default function Loans() {
         }
       }
 
-      await api.post('/api/loans', {
+      const payload = {
         ...form,
         principal_amount: parseFloat(form.principal_amount),
         interest_rate: parseFloat(form.interest_rate),
@@ -156,12 +216,26 @@ export default function Loans() {
         notify_days_before: parseInt(form.notify_days_before),
         contact_id: contactId,
         contact_name: name || null
-      })
-      toast.success('Empréstimo criado!')
+      }
+      if (editing) {
+        await api.put(`/api/loans/${editing.id}`, {
+          contact_id: contactId,
+          contact_name: name || null,
+          contact_phone: form.contact_phone || null,
+          notes: form.notes || null,
+          auto_notify: form.auto_notify,
+          notify_days_before: parseInt(form.notify_days_before),
+          custom_message: form.custom_message || null
+        })
+        toast.success('Empréstimo atualizado!')
+      } else {
+        await api.post('/api/loans', payload)
+        toast.success('Empréstimo criado!')
+      }
       setModal(false)
       load()
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erro ao criar empréstimo')
+      toast.error(err.response?.data?.error || 'Erro ao salvar empréstimo')
     }
   }
 
@@ -265,6 +339,11 @@ export default function Loans() {
         </button>
       </PageHeader>
 
+      {/* Busca */}
+      <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+        placeholder="Buscar por nome do devedor..."
+        className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+
       {/* Filtros */}
       <PeriodFilter value={period} onChange={setPeriod} />
       <div className="flex gap-2 mb-4">
@@ -318,14 +397,26 @@ export default function Loans() {
                 </div>
               </div>
 
-              {item.status === 'active' && parseInt(item.installments_overdue) > 0 && (
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => notifyOverdue(item.id)}
-                    className="flex-1 text-sm bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-lg font-medium transition-colors">
-                    📲 Cobrar vencidas via WhatsApp
-                  </button>
-                </div>
-              )}
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex gap-2 flex-wrap">
+                {item.status === 'active' && (
+                  <>
+                    <button onClick={() => notifyLoan(item)} disabled={notifyingLoan === item.id}
+                      className="text-xs bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-60">
+                      {notifyingLoan === item.id ? '⏳ Enviando...' : '💬 Cobrar'}
+                    </button>
+                    {parseInt(item.installments_overdue) > 0 && (
+                      <button onClick={() => notifyOverdue(item.id)}
+                        className="text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-lg font-medium transition-colors">
+                        📲 Cobrar vencidas ({item.installments_overdue})
+                      </button>
+                    )}
+                  </>
+                )}
+                <button onClick={() => openEdit(item)}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 px-3 py-1.5 ml-auto">✏️ Editar</button>
+                <button onClick={() => setDeleteConfirm(item)}
+                  className="text-xs text-red-500 hover:text-red-700 px-3 py-1.5">🗑️ Excluir</button>
+              </div>
             </div>
           ))}
         </div>
@@ -333,8 +424,8 @@ export default function Loans() {
 
       <Pagination page={page} pages={pages} onPageChange={setPage} />
 
-      {/* Modal criar */}
-      <Modal open={modal} onClose={() => setModal(false)} title="Novo Empréstimo">
+      {/* Modal criar/editar */}
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? 'Editar Empréstimo' : 'Novo Empréstimo'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Nome do devedor (busca em contatos) */}
           <div className="relative">
@@ -713,6 +804,15 @@ export default function Loans() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="Remover empréstimo"
+        message={`Remover empréstimo de "${deleteConfirm?.contact_name || 'sem nome'}"? Parcelas e histórico serão apagados.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        confirmLabel="Remover"
+      />
     </div>
   )
 }
