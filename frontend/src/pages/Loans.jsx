@@ -146,15 +146,24 @@ export default function Loans() {
     }
     setNotifyingLoan(item.id)
     try {
-      // Busca próxima parcela em aberto
       const { data: full } = await api.get(`/api/loans/${item.id}`)
-      const next = (full.installments_list || []).find(i => !i.paid)
-      if (!next) {
+      const open = (full.installments_list || []).filter(i => !i.paid)
+      if (open.length === 0) {
         toast.error('Sem parcelas em aberto para cobrar')
         return
       }
-      await api.post(`/api/loans/installments/${next.id}/notify`)
-      toast.success('Cobrança enviada via WhatsApp!')
+      const now = new Date()
+      // Prioriza a parcela VENCIDA mais antiga; senão pega a próxima a vencer
+      const overdue = open
+        .filter(i => new Date(i.due_date) < now)
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      const upcoming = open
+        .filter(i => new Date(i.due_date) >= now)
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      const target = overdue[0] || upcoming[0]
+      await api.post(`/api/loans/installments/${target.id}/notify`)
+      const kind = overdue[0] ? 'vencida' : 'próxima'
+      toast.success(`Cobrança enviada (parcela ${target.installment_number} · ${kind})`)
     } catch (e) {
       toast.error(e.response?.data?.error || 'Erro ao enviar cobrança')
     } finally { setNotifyingLoan(null) }
@@ -240,10 +249,14 @@ export default function Loans() {
       if (send_now && createdLoan?.id && rest.contact_phone) {
         try {
           const { data: full } = await api.get(`/api/loans/${createdLoan.id}`)
-          const next = (full.installments_list || []).find(i => !i.paid)
-          if (next) {
-            await api.post(`/api/loans/installments/${next.id}/notify`)
-            toast.success('Mensagem enviada via WhatsApp!')
+          const open = (full.installments_list || []).filter(i => !i.paid)
+          const now = new Date()
+          const overdue = open.filter(i => new Date(i.due_date) < now).sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+          const upcoming = open.filter(i => new Date(i.due_date) >= now).sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+          const target = overdue[0] || upcoming[0]
+          if (target) {
+            await api.post(`/api/loans/installments/${target.id}/notify`)
+            toast.success(`Cobrança enviada (parcela ${target.installment_number})`)
           }
         } catch (e) {
           toast.error(e.response?.data?.error || 'Erro ao enviar WhatsApp')
