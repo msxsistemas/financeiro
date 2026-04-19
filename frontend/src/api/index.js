@@ -20,13 +20,22 @@ api.interceptors.request.use((config) => {
 let isRefreshing = false
 let refreshQueue = []
 
+// Rotas onde 401 é esperado (credenciais inválidas no login, etc) — não tentar refresh nem mostrar toast
+const AUTH_ROUTES = ['/auth/login', '/auth/refresh', '/auth/register', '/auth/forgot-password', '/auth/reset-password']
+const isAuthRoute = (url) => AUTH_ROUTES.some(r => url?.includes(r))
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
 
+    // Se é rota de auth (login etc), deixa o caller lidar — não refresh, não toast automático
+    if (error.response?.status === 401 && isAuthRoute(originalRequest.url)) {
+      return Promise.reject(error)
+    }
+
     // Tentar refresh se 401 e nao e o proprio refresh
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute(originalRequest.url)) {
       originalRequest._retry = true
 
       if (!isRefreshing) {
@@ -71,8 +80,8 @@ api.interceptors.response.use(
       })
     }
 
-    // Outros 401 (ex: login invalido)
-    if (error.response?.status === 401) {
+    // Outros 401 (sessão expirada em rotas autenticadas)
+    if (error.response?.status === 401 && !isAuthRoute(originalRequest.url)) {
       localStorage.removeItem('fin_token')
       localStorage.removeItem('fin_user')
       localStorage.removeItem('fin_refresh_token')

@@ -6,6 +6,7 @@ import api from '../api'
 export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [forgotOpen, setForgotOpen] = useState(false)
   const formRef = useRef(null)
 
   // Anti-autofill: após montar, garante que os campos estão vazios
@@ -143,11 +144,47 @@ export default function Login() {
         </form>
 
         {!requires2fa && (
-          <p className="text-center text-xs text-gray-400 mt-6">
-            Login padrão: admin@financeiro.com / admin123
-          </p>
+          <>
+            <button type="button" onClick={() => setForgotOpen(true)}
+              className="w-full mt-3 text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
+              Esqueceu a senha?
+            </button>
+            <p className="text-center text-xs text-gray-400 mt-6">
+              Login padrão: admin@financeiro.com / admin123
+            </p>
+          </>
         )}
       </div>
+
+      {/* Modal: Esqueci a senha */}
+      {forgotOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setForgotOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg text-gray-800 dark:text-white">🔑 Esqueci minha senha</h2>
+              <button onClick={() => setForgotOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+            </div>
+            <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+              <p>Para recuperar seu acesso, entre em contato com um administrador do sistema. Ele poderá:</p>
+              <ul className="list-disc list-inside pl-2 space-y-1">
+                <li>Resetar sua senha no painel admin</li>
+                <li>Gerar uma senha provisória</li>
+                <li>Você será forçado a trocar no próximo login</li>
+              </ul>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 mt-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Contato do administrador:</p>
+                <p className="font-mono text-indigo-700 dark:text-indigo-300">admin@financeiro.msxsystem.site</p>
+              </div>
+              <button onClick={() => setForgotOpen(false)}
+                className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium">
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
