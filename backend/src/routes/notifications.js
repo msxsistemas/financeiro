@@ -12,7 +12,7 @@ export default async function notificationsRoutes(app) {
     const overdueDebts = await query(`
       SELECT id, description, type, amount - paid_amount as remaining, due_date, contact_name
       FROM debts
-      WHERE user_id = $1 AND status != 'paid' AND due_date < CURRENT_DATE
+      WHERE user_id = $1 AND status != 'paid' AND due_date < CURRENT_DATE AND deleted_at IS NULL
       ORDER BY due_date ASC
       LIMIT 10
     `, [userId])
@@ -35,6 +35,7 @@ export default async function notificationsRoutes(app) {
       FROM debts
       WHERE user_id = $1 AND status NOT IN ('paid', 'overdue')
         AND due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'
+        AND deleted_at IS NULL
       ORDER BY due_date ASC
       LIMIT 5
     `, [userId])
@@ -56,7 +57,7 @@ export default async function notificationsRoutes(app) {
     const lowStock = await query(`
       SELECT id, name, stock_quantity, min_stock, unit
       FROM products
-      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0
+      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0 AND deleted_at IS NULL
       ORDER BY stock_quantity ASC
       LIMIT 5
     `, [userId])
@@ -80,6 +81,7 @@ export default async function notificationsRoutes(app) {
       WHERE user_id = $1
         AND DATE(start_date) = CURRENT_DATE
         AND start_date > NOW()
+        AND deleted_at IS NULL
       ORDER BY start_date ASC
       LIMIT 5
     `, [userId])
@@ -102,6 +104,7 @@ export default async function notificationsRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'pending'
         AND due_date < CURRENT_DATE AND type = 'expense'
+        AND deleted_at IS NULL
     `, [userId])
 
     if (parseInt(pendingTx.rows[0].count) > 0) {
@@ -125,6 +128,7 @@ export default async function notificationsRoutes(app) {
       WHERE li.user_id = $1 AND NOT li.paid
         AND li.due_date < CURRENT_DATE
         AND l.status = 'active'
+        AND l.deleted_at IS NULL
       ORDER BY li.due_date ASC
       LIMIT 10
     `, [userId])
@@ -150,6 +154,7 @@ export default async function notificationsRoutes(app) {
       WHERE li.user_id = $1 AND NOT li.paid
         AND li.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '2 days'
         AND l.status = 'active'
+        AND l.deleted_at IS NULL
       ORDER BY li.due_date ASC
       LIMIT 5
     `, [userId])
@@ -181,6 +186,7 @@ export default async function notificationsRoutes(app) {
       LEFT JOIN transactions t ON t.category_id = c.id
         AND t.type = 'expense' AND t.status = 'completed'
         AND t.paid_date BETWEEN $2 AND $3 AND t.user_id = $1
+        AND t.deleted_at IS NULL
       WHERE b.user_id = $1 AND b.month = $4 AND b.year = $5
       GROUP BY b.amount, c.name
       HAVING COALESCE(SUM(t.amount), 0) >= b.amount * 0.9
@@ -207,7 +213,7 @@ export default async function notificationsRoutes(app) {
     if (goalRes.rows[0]?.target_income) {
       const target = parseFloat(goalRes.rows[0].target_income)
       const actualIncomeRes = await query(
-        'SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE user_id=$1 AND type=\'income\' AND status=\'completed\' AND paid_date BETWEEN $2 AND $3',
+        'SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE user_id=$1 AND type=\'income\' AND status=\'completed\' AND paid_date BETWEEN $2 AND $3 AND deleted_at IS NULL',
         [userId, bStart, bEnd]
       )
       const actual = parseFloat(actualIncomeRes.rows[0].total || 0)
@@ -230,7 +236,7 @@ export default async function notificationsRoutes(app) {
     // Receitas pendentes vencidas
     const pendingIncome = await query(`
       SELECT COUNT(*) as count, SUM(amount) as total
-      FROM transactions WHERE user_id=$1 AND status='pending' AND due_date < CURRENT_DATE AND type='income'
+      FROM transactions WHERE user_id=$1 AND status='pending' AND due_date < CURRENT_DATE AND type='income' AND deleted_at IS NULL
     `, [userId])
     if (parseInt(pendingIncome.rows[0].count) > 0) {
       alerts.push({

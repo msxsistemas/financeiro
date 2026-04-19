@@ -16,14 +16,14 @@ export default async function reportsRoutes(app) {
         t.due_date, t.paid_date, COALESCE(t.cost_center,'') AS cost_center
       FROM transactions t
       LEFT JOIN categories c ON c.id = t.category_id
-      WHERE t.user_id = $1 AND COALESCE(t.paid_date, t.due_date) BETWEEN $2 AND $3
+      WHERE t.user_id = $1 AND COALESCE(t.paid_date, t.due_date) BETWEEN $2 AND $3 AND t.deleted_at IS NULL
     `, [userId, s, e])
 
     const dbs = await query(`
       SELECT 'debt' AS origem, id::text, description, type,
         amount, '' AS categoria, status, due_date, NULL AS paid_date, '' AS cost_center
       FROM debts
-      WHERE user_id = $1 AND due_date BETWEEN $2 AND $3
+      WHERE user_id = $1 AND due_date BETWEEN $2 AND $3 AND deleted_at IS NULL
     `, [userId, s, e])
 
     const loans = await query(`
@@ -35,7 +35,7 @@ export default async function reportsRoutes(app) {
         li.due_date, li.paid_at AS paid_date, '' AS cost_center
       FROM loan_installments li
       JOIN loans l ON l.id = li.loan_id
-      WHERE li.user_id = $1 AND li.due_date BETWEEN $2 AND $3
+      WHERE li.user_id = $1 AND li.due_date BETWEEN $2 AND $3 AND l.deleted_at IS NULL
     `, [userId, s, e])
 
     const all = [...tx.rows, ...dbs.rows, ...loans.rows]
@@ -77,7 +77,7 @@ export default async function reportsRoutes(app) {
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'income' AND t.status = 'completed'
-        AND t.paid_date BETWEEN $2 AND $3
+        AND t.paid_date BETWEEN $2 AND $3 AND t.deleted_at IS NULL
       GROUP BY c.name, c.color
       ORDER BY total DESC
     `, [userId, start, end])
@@ -92,7 +92,7 @@ export default async function reportsRoutes(app) {
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'expense' AND t.status = 'completed'
-        AND t.paid_date BETWEEN $2 AND $3
+        AND t.paid_date BETWEEN $2 AND $3 AND t.deleted_at IS NULL
       GROUP BY c.name, c.color
       ORDER BY total DESC
     `, [userId, start, end])
@@ -110,11 +110,11 @@ export default async function reportsRoutes(app) {
     const [prevIncomeRes, prevExpenseRes] = await Promise.all([
       query(`SELECT COALESCE(c.name,'Sem categoria') as category, SUM(t.amount) as total
         FROM transactions t LEFT JOIN categories c ON t.category_id=c.id
-        WHERE t.user_id=$1 AND t.type='income' AND t.status='completed' AND t.paid_date BETWEEN $2 AND $3
+        WHERE t.user_id=$1 AND t.type='income' AND t.status='completed' AND t.paid_date BETWEEN $2 AND $3 AND t.deleted_at IS NULL
         GROUP BY c.name`, [userId, prevStart, prevEnd]),
       query(`SELECT COALESCE(c.name,'Sem categoria') as category, SUM(t.amount) as total
         FROM transactions t LEFT JOIN categories c ON t.category_id=c.id
-        WHERE t.user_id=$1 AND t.type='expense' AND t.status='completed' AND t.paid_date BETWEEN $2 AND $3
+        WHERE t.user_id=$1 AND t.type='expense' AND t.status='completed' AND t.paid_date BETWEEN $2 AND $3 AND t.deleted_at IS NULL
         GROUP BY c.name`, [userId, prevStart, prevEnd])
     ])
     const prevIncomeMap = {}; prevIncomeRes.rows.forEach(r => { prevIncomeMap[r.category] = parseFloat(r.total) })
@@ -131,6 +131,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN transactions t ON t.category_id = c.id
         AND t.type = 'expense' AND t.status = 'completed'
         AND t.paid_date BETWEEN $2 AND $3 AND t.user_id = $1
+        AND t.deleted_at IS NULL
       WHERE b.user_id = $1 AND b.month = $4 AND b.year = $5
       GROUP BY b.amount, c.name, c.id
     `, [userId, start, end, m, y])
@@ -183,6 +184,7 @@ export default async function reportsRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(paid_date, due_date, created_at::date)) = $2
+        AND deleted_at IS NULL
       GROUP BY 1, 2
       ORDER BY 1
     `, [userId, year])
@@ -235,6 +237,7 @@ export default async function reportsRoutes(app) {
         ${accountFilter}
         AND status IN ('pending', 'completed')
         AND COALESCE(due_date, created_at::date) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '${days} days'
+        AND deleted_at IS NULL
       GROUP BY 1, 2, 3
       ORDER BY 1
     `, baseParams)
@@ -247,6 +250,7 @@ export default async function reportsRoutes(app) {
       WHERE user_id = $1 AND status = 'completed'
         ${accountFilter}
         AND COALESCE(paid_date, due_date) < CURRENT_DATE
+        AND deleted_at IS NULL
     `, baseParams)
 
     let runningBalance = parseFloat(balanceRes.rows[0]?.balance || 0)
@@ -313,6 +317,7 @@ export default async function reportsRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'completed'
         AND COALESCE(paid_date, due_date, created_at::date) >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+        AND deleted_at IS NULL
       GROUP BY 1, 2
       ORDER BY 1
     `, [userId])
@@ -344,6 +349,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN transactions t ON t.category_id = c.id
         AND t.type = 'expense' AND t.status = 'completed'
         AND t.paid_date BETWEEN $2 AND $3 AND t.user_id = $1
+        AND t.deleted_at IS NULL
       WHERE b.user_id = $1 AND b.month = $4 AND b.year = $5
       GROUP BY b.id, c.name, c.color
     `, [userId, start, end, m, y])
@@ -404,6 +410,7 @@ export default async function reportsRoutes(app) {
       WHERE user_id = $1 AND status = 'completed'
         AND COALESCE(paid_date, due_date, created_at::date) >=
           DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+        AND deleted_at IS NULL
       GROUP BY 1
       ORDER BY 1
     `, [userId])
@@ -419,6 +426,7 @@ export default async function reportsRoutes(app) {
       WHERE user_id = $1 AND status = 'completed'
         AND COALESCE(paid_date, due_date, created_at::date) <
           DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+        AND deleted_at IS NULL
     `, [userId])
     cumulative = parseFloat(prevBalance.rows[0]?.balance || 0)
 
@@ -465,7 +473,7 @@ export default async function reportsRoutes(app) {
         SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
       FROM transactions
-      WHERE user_id = $1 AND status = 'completed' AND paid_date BETWEEN $2 AND $3
+      WHERE user_id = $1 AND status = 'completed' AND paid_date BETWEEN $2 AND $3 AND deleted_at IS NULL
     `, [userId, start, end])
 
     // Metas de despesa por categoria
@@ -477,6 +485,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN transactions t ON t.category_id = c.id
         AND t.type = 'expense' AND t.status = 'completed'
         AND t.paid_date BETWEEN $2 AND $3 AND t.user_id = $1
+        AND t.deleted_at IS NULL
       WHERE b.user_id = $1 AND b.month = $4 AND b.year = $5
       GROUP BY b.id, c.name, c.color
     `, [userId, start, end, m, y])
@@ -550,7 +559,8 @@ export default async function reportsRoutes(app) {
         AND t.type = 'income' AND t.status = 'completed'
         AND COALESCE(t.paid_date, t.due_date) BETWEEN $2 AND $3
         AND t.user_id = $1
-      WHERE p.user_id = $1 AND p.active = true
+        AND t.deleted_at IS NULL
+      WHERE p.user_id = $1 AND p.active = true AND p.deleted_at IS NULL
       GROUP BY p.id, p.name, p.price, p.cost, p.unit
       ORDER BY revenue DESC
     `, [userId, start, end])
@@ -594,6 +604,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'income' AND t.status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(t.paid_date, t.due_date)) = $2
+        AND t.deleted_at IS NULL
       GROUP BY 1, 2
       ORDER BY 1, total DESC
     `, [userId, year])
@@ -609,6 +620,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'expense' AND t.status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(t.paid_date, t.due_date)) = $2
+        AND t.deleted_at IS NULL
       GROUP BY 1, 2
       ORDER BY 1, total DESC
     `, [userId, year])
@@ -622,6 +634,7 @@ export default async function reportsRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(paid_date, due_date)) = $2
+        AND deleted_at IS NULL
       GROUP BY type
     `, [userId, year])
 
@@ -635,6 +648,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'income' AND t.status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(t.paid_date, t.due_date)) = $2
+        AND t.deleted_at IS NULL
       GROUP BY c.name
       ORDER BY total DESC
     `, [userId, year])
@@ -649,6 +663,7 @@ export default async function reportsRoutes(app) {
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'expense' AND t.status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(t.paid_date, t.due_date)) = $2
+        AND t.deleted_at IS NULL
       GROUP BY c.name
       ORDER BY total DESC
     `, [userId, year])
@@ -662,6 +677,7 @@ export default async function reportsRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(paid_date, due_date)) = $2
+        AND deleted_at IS NULL
       GROUP BY 1
       ORDER BY 1
     `, [userId, year])
@@ -733,6 +749,7 @@ export default async function reportsRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(paid_date, due_date)) = $2
+        AND deleted_at IS NULL
       GROUP BY type
     `, [userId, year])
 
@@ -741,6 +758,7 @@ export default async function reportsRoutes(app) {
       FROM transactions t LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'income' AND t.status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(t.paid_date, t.due_date)) = $2
+        AND t.deleted_at IS NULL
       GROUP BY c.name ORDER BY total DESC
     `, [userId, year])
 
@@ -749,6 +767,7 @@ export default async function reportsRoutes(app) {
       FROM transactions t LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'expense' AND t.status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(t.paid_date, t.due_date)) = $2
+        AND t.deleted_at IS NULL
       GROUP BY c.name ORDER BY total DESC
     `, [userId, year])
 
@@ -758,6 +777,7 @@ export default async function reportsRoutes(app) {
         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
       FROM transactions WHERE user_id = $1 AND status = 'completed'
         AND EXTRACT(YEAR FROM COALESCE(paid_date, due_date)) = $2
+        AND deleted_at IS NULL
       GROUP BY 1 ORDER BY 1
     `, [userId, year])
 
@@ -902,7 +922,7 @@ export default async function reportsRoutes(app) {
         SUM(t.amount) as total, COUNT(*) as count
       FROM transactions t LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'income' AND t.status = 'completed'
-        AND t.paid_date BETWEEN $2 AND $3
+        AND t.paid_date BETWEEN $2 AND $3 AND t.deleted_at IS NULL
       GROUP BY c.name, c.color ORDER BY total DESC
     `, [userId, start, end])
 
@@ -911,7 +931,7 @@ export default async function reportsRoutes(app) {
         SUM(t.amount) as total, COUNT(*) as count
       FROM transactions t LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1 AND t.type = 'expense' AND t.status = 'completed'
-        AND t.paid_date BETWEEN $2 AND $3
+        AND t.paid_date BETWEEN $2 AND $3 AND t.deleted_at IS NULL
       GROUP BY c.name, c.color ORDER BY total DESC
     `, [userId, start, end])
 

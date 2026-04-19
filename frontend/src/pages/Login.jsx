@@ -28,7 +28,12 @@ export default function Login() {
       localStorage.setItem('fin_token', data.token)
       localStorage.setItem('fin_user', JSON.stringify(data.user))
       if (data.refresh_token) localStorage.setItem('fin_refresh_token', data.refresh_token)
-      navigate('/')
+      if (data.user?.must_change_password) {
+        toast('Por segurança, troque a senha padrão agora', { icon: '🔐', duration: 5000 })
+        navigate('/settings?forcePassword=1')
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erro ao fazer login')
     } finally {

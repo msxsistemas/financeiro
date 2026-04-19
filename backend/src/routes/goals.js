@@ -5,7 +5,7 @@ export default async function goalsRoutes(app) {
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id
     const result = await query(
-      'SELECT * FROM savings_goals WHERE user_id=$1 ORDER BY created_at DESC',
+      'SELECT * FROM savings_goals WHERE user_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC',
       [userId]
     )
     return result.rows
@@ -33,7 +33,7 @@ export default async function goalsRoutes(app) {
     const result = await query(
       `UPDATE savings_goals SET name=$1, target_amount=$2, current_amount=$3, deadline=$4,
        color=$5, icon=$6, notes=$7, completed=$8
-       WHERE id=$9 AND user_id=$10 RETURNING *`,
+       WHERE id=$9 AND user_id=$10 AND deleted_at IS NULL RETURNING *`,
       [name, parseFloat(target_amount), parseFloat(current_amount) || 0,
        deadline || null, color || '#22c55e', icon || '🎯', notes || null,
        completed || false, request.params.id, userId]
@@ -52,7 +52,7 @@ export default async function goalsRoutes(app) {
       `UPDATE savings_goals
        SET current_amount = current_amount + $1,
            completed = (current_amount + $1 >= target_amount)
-       WHERE id=$2 AND user_id=$3 RETURNING *`,
+       WHERE id=$2 AND user_id=$3 AND deleted_at IS NULL RETURNING *`,
       [parseFloat(amount), request.params.id, userId]
     )
     if (!result.rows[0]) return reply.code(404).send({ error: 'Não encontrada' })
@@ -69,7 +69,7 @@ export default async function goalsRoutes(app) {
       `UPDATE savings_goals
        SET current_amount = GREATEST(0, current_amount - $1),
            completed = false
-       WHERE id=$2 AND user_id=$3 RETURNING *`,
+       WHERE id=$2 AND user_id=$3 AND deleted_at IS NULL RETURNING *`,
       [parseFloat(amount), request.params.id, userId]
     )
     if (!result.rows[0]) return reply.code(404).send({ error: 'Não encontrada' })
@@ -79,7 +79,7 @@ export default async function goalsRoutes(app) {
   // Deletar meta
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    await query('DELETE FROM savings_goals WHERE id=$1 AND user_id=$2', [request.params.id, userId])
+    await query('UPDATE savings_goals SET deleted_at = NOW() WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL', [request.params.id, userId])
     return { message: 'Meta removida' }
   })
 }

@@ -6,7 +6,7 @@ export default async function contactsRoutes(app) {
     const userId = request.user.id
     const { type, search, page = 1, limit = 50 } = request.query
 
-    const conditions = ['user_id = $1']
+    const conditions = ['user_id = $1', 'deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -38,7 +38,7 @@ export default async function contactsRoutes(app) {
   // Buscar por ID
   app.get('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const result = await query(
-      'SELECT * FROM contacts WHERE id = $1 AND user_id = $2',
+      'SELECT * FROM contacts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
       [request.params.id, request.user.id]
     )
     if (!result.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
@@ -68,14 +68,14 @@ export default async function contactsRoutes(app) {
     const userId = request.user.id
     const { name, phone, email, cpf_cnpj, type, notes, address, city, state, zip_code } = request.body
 
-    const check = await query('SELECT id FROM contacts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT id FROM contacts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const result = await query(`
       UPDATE contacts SET
         name = $1, phone = $2, email = $3, cpf_cnpj = $4,
         type = $5, notes = $6, address = $7, city = $8, state = $9, zip_code = $10, updated_at = NOW()
-      WHERE id = $11 AND user_id = $12
+      WHERE id = $11 AND user_id = $12 AND deleted_at IS NULL
       RETURNING *
     `, [name, phone || null, email || null, cpf_cnpj || null,
         type || 'client', notes || null, address || null, city || null, state || null, zip_code || null, request.params.id, userId])
@@ -87,14 +87,14 @@ export default async function contactsRoutes(app) {
   // Histórico financeiro do contato
   app.get('/:id/history', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id
-    const contactRes = await query('SELECT * FROM contacts WHERE id=$1 AND user_id=$2', [request.params.id, userId])
+    const contactRes = await query('SELECT * FROM contacts WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!contactRes.rows[0]) return { contact: null, debts: [], transactions: [], sales: [] }
     const contact = contactRes.rows[0]
 
     const [debtsRes, transRes, salesRes] = await Promise.all([
-      query(`SELECT * FROM debts WHERE user_id=$1 AND (contact_name ILIKE $2 OR contact_phone=$3) ORDER BY created_at DESC LIMIT 50`,
+      query(`SELECT * FROM debts WHERE user_id=$1 AND (contact_name ILIKE $2 OR contact_phone=$3) AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 50`,
         [userId, `%${contact.name}%`, contact.phone || '']),
-      query(`SELECT * FROM transactions WHERE user_id=$1 AND description ILIKE $2 ORDER BY created_at DESC LIMIT 30`,
+      query(`SELECT * FROM transactions WHERE user_id=$1 AND description ILIKE $2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 30`,
         [userId, `%${contact.name}%`]),
       query(`SELECT sm.*, p.name as product_name FROM stock_movements sm
         JOIN products p ON p.id = sm.product_id
@@ -153,10 +153,10 @@ export default async function contactsRoutes(app) {
   // Deletar
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const check = await query('SELECT id FROM contacts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT id FROM contacts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
-    await query('DELETE FROM contacts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    await query('UPDATE contacts SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     await logActivity(userId, 'DELETE', 'contact', request.params.id, 'Contato removido')
     return { message: 'Removido com sucesso' }
   })

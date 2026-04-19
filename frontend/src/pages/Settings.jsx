@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -6,10 +7,19 @@ import MaskedInput from '../components/MaskedInput'
 import api from '../api'
 
 export default function Settings() {
+  const [searchParams] = useSearchParams()
+  const forcePassword = searchParams.get('forcePassword') === '1'
+  const pwRef = useRef(null)
   const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('fin_user') || '{}') } catch { return {} } })
   const [profile, setProfile] = useState(null)
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm: '' })
   const [pwLoading, setPwLoading] = useState(false)
+
+  useEffect(() => {
+    if (forcePassword && pwRef.current) {
+      pwRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [forcePassword])
 
   // Perfil editavel
   const [profileForm, setProfileForm] = useState({ name: '', email: '' })
@@ -233,7 +243,13 @@ export default function Settings() {
       </div>
 
       {/* Alterar senha */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div ref={pwRef}
+        className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border ${forcePassword ? 'border-red-400 dark:border-red-700 ring-2 ring-red-300' : 'border-gray-100 dark:border-gray-700'}`}>
+        {forcePassword && (
+          <div className="mb-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 text-sm rounded-lg px-3 py-2">
+            ⚠️ Por segurança, troque a senha padrão antes de continuar.
+          </div>
+        )}
         <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">🔑 Alterar Senha</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>

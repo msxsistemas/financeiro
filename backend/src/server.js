@@ -32,6 +32,7 @@ import emailRoutes from './routes/email.js'
 import bulkRoutes from './routes/bulk.js'
 import transactionsRoutes from './routes/transactions.js'
 import productsRoutes from './routes/products.js'
+import trashRoutes, { purgeOldTrash } from './routes/trash.js'
 
 const app = Fastify({
   logger: { level: 'info' },
@@ -180,6 +181,7 @@ await app.register(emailRoutes, { prefix: '/api/email' })
 await app.register(bulkRoutes, { prefix: '/api/bulk' })
 await app.register(transactionsRoutes, { prefix: '/api/transactions' })
 await app.register(productsRoutes, { prefix: '/api/products' })
+await app.register(trashRoutes, { prefix: '/api/trash' })
 
 // Health check
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
@@ -562,6 +564,16 @@ cron.schedule('0 3 * * *', async () => {
     await runBackup()
   } catch (err) {
     app.log.error({ err: err.message }, 'Erro no backup automático')
+  }
+})
+
+// Diariamente às 4h: purga permanente de itens na lixeira há mais de 30 dias
+cron.schedule('0 4 * * *', async () => {
+  try {
+    const n = await purgeOldTrash()
+    if (n > 0) app.log.info(`Purga: ${n} item(s) removidos permanentemente da lixeira`)
+  } catch (err) {
+    app.log.error({ err: err.message }, 'Erro na purga de lixeira')
   }
 })
 

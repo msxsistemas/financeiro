@@ -152,7 +152,7 @@ export default async function loansRoutes(app) {
     const userId = request.user.id
     const { status, search, page = 1, limit = 20, start_date, end_date } = request.query
 
-    const conditions = ['l.user_id = $1']
+    const conditions = ['l.user_id = $1', 'l.deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -197,7 +197,7 @@ export default async function loansRoutes(app) {
     const { id } = request.params
     const userId = request.user.id
 
-    const loanRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2', [id, userId])
+    const loanRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
     if (!loanRes.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
     const loan = loanRes.rows[0]
 
@@ -237,7 +237,7 @@ export default async function loansRoutes(app) {
     let cName = contact_name
     let cPhone = contact_phone
     if (contact_id) {
-      const cRes = await query('SELECT name, phone FROM contacts WHERE id = $1 AND user_id = $2', [contact_id, userId])
+      const cRes = await query('SELECT name, phone FROM contacts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [contact_id, userId])
       if (cRes.rows[0]) { cName = cRes.rows[0].name; cPhone = cRes.rows[0].phone }
     }
 
@@ -289,7 +289,7 @@ export default async function loansRoutes(app) {
         notify_days_before = COALESCE($6, notify_days_before),
         status = COALESCE($7, status),
         custom_message = COALESCE($8, custom_message)
-      WHERE id = $9 AND user_id = $10
+      WHERE id = $9 AND user_id = $10 AND deleted_at IS NULL
       RETURNING *
     `, [contact_id || null, contact_name, contact_phone, notes, auto_notify, notify_days_before, status, custom_message, id, userId])
 
@@ -299,7 +299,7 @@ export default async function loansRoutes(app) {
 
   // Deletar empréstimo
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
-    const res = await query('DELETE FROM loans WHERE id = $1 AND user_id = $2 RETURNING id',
+    const res = await query('UPDATE loans SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING id',
       [request.params.id, request.user.id])
     if (!res.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
     return { message: 'Empréstimo excluído' }
@@ -459,7 +459,7 @@ export default async function loansRoutes(app) {
     const { id } = request.params
     const userId = request.user.id
 
-    const loanRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2', [id, userId])
+    const loanRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
     if (!loanRes.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
 
     const loan = loanRes.rows[0]
@@ -555,7 +555,7 @@ export default async function loansRoutes(app) {
     const userId = request.user.id
     const { id } = request.params
 
-    const loanRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2', [id, userId])
+    const loanRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
     if (!loanRes.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
     const loan = loanRes.rows[0]
 

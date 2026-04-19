@@ -10,7 +10,7 @@ export default async function bulkRoutes(app) {
     if (ids.length > 100) return reply.code(400).send({ error: 'Maximo 100 itens por vez' })
 
     const result = await query(
-      'DELETE FROM transactions WHERE id = ANY($1) AND user_id = $2 RETURNING id',
+      'UPDATE transactions SET deleted_at = NOW() WHERE id = ANY($1) AND user_id = $2 AND deleted_at IS NULL RETURNING id',
       [ids, userId]
     )
     await logActivity(userId, 'BULK_DELETE', 'transaction', null, `${result.rowCount} transacoes removidas em lote`)
@@ -27,7 +27,7 @@ export default async function bulkRoutes(app) {
 
     const extra = status === 'completed' ? ', paid_date = CURRENT_DATE' : ''
     const result = await query(
-      `UPDATE transactions SET status = $1${extra}, updated_at = NOW() WHERE id = ANY($2) AND user_id = $3 RETURNING id`,
+      `UPDATE transactions SET status = $1${extra}, updated_at = NOW() WHERE id = ANY($2) AND user_id = $3 AND deleted_at IS NULL RETURNING id`,
       [status, ids, userId]
     )
     await logActivity(userId, 'BULK_UPDATE', 'transaction', null, `${result.rowCount} transacoes atualizadas para ${status}`)
@@ -42,7 +42,7 @@ export default async function bulkRoutes(app) {
     if (ids.length > 100) return reply.code(400).send({ error: 'Maximo 100 itens por vez' })
 
     const result = await query(
-      'DELETE FROM debts WHERE id = ANY($1) AND user_id = $2 RETURNING id',
+      'UPDATE debts SET deleted_at = NOW() WHERE id = ANY($1) AND user_id = $2 AND deleted_at IS NULL RETURNING id',
       [ids, userId]
     )
     await logActivity(userId, 'BULK_DELETE', 'debt', null, `${result.rowCount} dividas removidas em lote`)
@@ -58,7 +58,7 @@ export default async function bulkRoutes(app) {
     if (ids.length > 100) return reply.code(400).send({ error: 'Maximo 100 itens por vez' })
 
     const result = await query(
-      'UPDATE debts SET status = $1, updated_at = NOW() WHERE id = ANY($2) AND user_id = $3 RETURNING id',
+      'UPDATE debts SET status = $1, updated_at = NOW() WHERE id = ANY($2) AND user_id = $3 AND deleted_at IS NULL RETURNING id',
       [status, ids, userId]
     )
     await logActivity(userId, 'BULK_UPDATE', 'debt', null, `${result.rowCount} dividas atualizadas para ${status}`)

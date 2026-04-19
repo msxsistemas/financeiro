@@ -6,7 +6,7 @@ export default async function productsRoutes(app) {
     const userId = request.user.id
     const { search, category, low_stock, active, page = 1, limit = 50 } = request.query
 
-    const conditions = ['user_id = $1']
+    const conditions = ['user_id = $1', 'deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -46,7 +46,7 @@ export default async function productsRoutes(app) {
   app.get('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const { id } = request.params
     const userId = request.user.id
-    const prod = await query('SELECT * FROM products WHERE id = $1 AND user_id = $2', [id, userId])
+    const prod = await query('SELECT * FROM products WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
     if (!prod.rows[0]) return reply.code(404).send({ error: 'Produto não encontrado' })
     const movs = await query(
       `SELECT * FROM stock_movements WHERE product_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 50`,
@@ -92,7 +92,7 @@ export default async function productsRoutes(app) {
         category = $8,
         active = COALESCE($9, active),
         updated_at = NOW()
-      WHERE id = $10 AND user_id = $11
+      WHERE id = $10 AND user_id = $11 AND deleted_at IS NULL
       RETURNING *
     `, [
       name || null, description || null, sku || null,
@@ -112,7 +112,7 @@ export default async function productsRoutes(app) {
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const { id } = request.params
     const userId = request.user.id
-    const res = await query('DELETE FROM products WHERE id = $1 AND user_id = $2 RETURNING name', [id, userId])
+    const res = await query('UPDATE products SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING name', [id, userId])
     if (!res.rows[0]) return reply.code(404).send({ error: 'Produto não encontrado' })
     await logActivity(userId, 'PRODUCT_DELETE', 'product', id, `Produto removido: ${res.rows[0].name}`)
     return { ok: true }
@@ -132,7 +132,7 @@ export default async function productsRoutes(app) {
       return reply.code(400).send({ error: 'Quantidade inválida' })
     }
 
-    const prodRes = await query('SELECT * FROM products WHERE id = $1 AND user_id = $2', [id, userId])
+    const prodRes = await query('SELECT * FROM products WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
     if (!prodRes.rows[0]) return reply.code(404).send({ error: 'Produto não encontrado' })
     const prod = prodRes.rows[0]
 
@@ -143,7 +143,7 @@ export default async function productsRoutes(app) {
 
     if (newQty < 0) return reply.code(400).send({ error: 'Estoque não pode ficar negativo' })
 
-    await query('UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2', [newQty, id])
+    await query('UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL', [newQty, id])
     const mov = await query(`
       INSERT INTO stock_movements (product_id, type, quantity, reason, reference, user_id)
       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *
@@ -158,7 +158,7 @@ export default async function productsRoutes(app) {
   // Categorias distintas
   app.get('/categories/list', { preHandler: [app.authenticate] }, async (request) => {
     const res = await query(
-      `SELECT DISTINCT category FROM products WHERE user_id = $1 AND category IS NOT NULL ORDER BY category ASC`,
+      `SELECT DISTINCT category FROM products WHERE user_id = $1 AND category IS NOT NULL AND deleted_at IS NULL ORDER BY category ASC`,
       [request.user.id]
     )
     return res.rows.map(r => r.category)

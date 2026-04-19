@@ -62,7 +62,7 @@ export default async function transactionsRoutes(app) {
     const userId = request.user.id
     const { type, status, category_id, account_id, start_date, end_date, page = 1, limit = 20, search, cost_center } = request.query
 
-    const conditions = ['t.user_id = $1']
+    const conditions = ['t.user_id = $1', 't.deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -105,7 +105,7 @@ export default async function transactionsRoutes(app) {
   // Buscar por ID
   app.get('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const result = await query(
-      'SELECT t.*, c.name as category_name FROM transactions t LEFT JOIN categories c ON t.category_id = c.id WHERE t.id = $1 AND t.user_id = $2',
+      'SELECT t.*, c.name as category_name FROM transactions t LEFT JOIN categories c ON t.category_id = c.id WHERE t.id = $1 AND t.user_id = $2 AND t.deleted_at IS NULL',
       [request.params.id, request.user.id]
     )
     if (!result.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
@@ -128,6 +128,7 @@ export default async function transactionsRoutes(app) {
       SELECT id FROM transactions
       WHERE user_id = $1 AND description = $2 AND amount = $3 AND type = $4
         AND created_at > NOW() - INTERVAL '5 minutes'
+        AND deleted_at IS NULL
       LIMIT 1
     `, [userId, description, amount, type])
     if (duplicateCheck.rows[0]) {
@@ -158,10 +159,10 @@ export default async function transactionsRoutes(app) {
 
     // Dar saída no estoque se for venda vinculada a produto
     if (product_id && product_quantity && type === 'income') {
-      const prod = await query('SELECT * FROM products WHERE id = $1 AND user_id = $2', [product_id, userId])
+      const prod = await query('SELECT * FROM products WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [product_id, userId])
       if (prod.rows[0]) {
         const newQty = prod.rows[0].stock_quantity - parseInt(product_quantity)
-        await query('UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2',
+        await query('UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL',
           [Math.max(0, newQty), product_id])
         await query(
           'INSERT INTO stock_movements (product_id, type, quantity, reason, user_id) VALUES ($1, $2, $3, $4, $5)',
@@ -182,7 +183,7 @@ export default async function transactionsRoutes(app) {
     const userId = request.user.id
     const { description, amount, type, status, category_id, due_date, paid_date, notes, account_id, cost_center, project } = request.body
 
-    const check = await query('SELECT id FROM transactions WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT id FROM transactions WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const result = await query(`
@@ -190,7 +191,7 @@ export default async function transactionsRoutes(app) {
         description = $1, amount = $2, type = $3, status = $4,
         category_id = $5, due_date = $6, paid_date = $7, notes = $8,
         account_id = $9, cost_center = $10, project = $11, updated_at = NOW()
-      WHERE id = $12 AND user_id = $13
+      WHERE id = $12 AND user_id = $13 AND deleted_at IS NULL
       RETURNING *
     `, [description, amount, type, status, category_id || null, due_date || null, paid_date || null, notes || null, account_id || null, cost_center || null, project || null, request.params.id, userId])
 
@@ -203,10 +204,10 @@ export default async function transactionsRoutes(app) {
   // Deletar
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const check = await query('SELECT id FROM transactions WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT id FROM transactions WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
-    await query('DELETE FROM transactions WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    await query('UPDATE transactions SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     await logActivity(userId, 'DELETE', 'transaction', request.params.id, 'Transação removida')
     invalidateDashboardCache(userId)
 
@@ -305,7 +306,7 @@ export default async function transactionsRoutes(app) {
     const userId = request.user.id
     const { type, status, start_date, end_date } = request.query
 
-    const conditions = ['t.user_id = $1']
+    const conditions = ['t.user_id = $1', 't.deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -338,7 +339,7 @@ export default async function transactionsRoutes(app) {
     const userId = request.user.id
     const { type, status, start_date, end_date } = request.query
 
-    const conditions = ['t.user_id = $1']
+    const conditions = ['t.user_id = $1', 't.deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 

@@ -34,7 +34,7 @@ export default async function dashboardRoutes(app) {
     const overdueDebts = await query(`
       SELECT COUNT(*)::int AS c, COALESCE(SUM(amount - paid_amount), 0) AS total
       FROM debts WHERE user_id = $1 AND status IN ('pending', 'partial', 'overdue')
-        AND due_date < CURRENT_DATE
+        AND due_date < CURRENT_DATE AND deleted_at IS NULL
     `, [userId])
     if (overdueDebts.rows[0].c > 0) {
       alerts.push({
@@ -74,7 +74,7 @@ export default async function dashboardRoutes(app) {
         COALESCE(SUM(CASE WHEN paid_date >= $3 AND paid_date < $2 THEN amount ELSE 0 END) / 3, 0) AS avg_prev
       FROM transactions
       WHERE user_id = $1 AND type = 'expense' AND status = 'completed'
-        AND paid_date >= $3
+        AND paid_date >= $3 AND deleted_at IS NULL
     `, [userId, thisMonthStart, threeMoAgo])
     const thisMonth = parseFloat(avgRes.rows[0].this_month)
     const avgPrev = parseFloat(avgRes.rows[0].avg_prev)
@@ -92,7 +92,7 @@ export default async function dashboardRoutes(app) {
     // Produtos com estoque baixo
     const lowStock = await query(`
       SELECT COUNT(*)::int AS c FROM products
-      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0
+      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0 AND deleted_at IS NULL
     `, [userId])
     if (lowStock.rows[0].c > 0) {
       alerts.push({
@@ -113,7 +113,7 @@ export default async function dashboardRoutes(app) {
       const incomeRes = await query(`
         SELECT COALESCE(SUM(amount), 0) AS total FROM transactions
         WHERE user_id = $1 AND type = 'income' AND status = 'completed'
-          AND paid_date >= $2
+          AND paid_date >= $2 AND deleted_at IS NULL
       `, [userId, thisMonthStart])
       const target = parseFloat(goalRes.rows[0].target_income)
       const earned = parseFloat(incomeRes.rows[0].total)
@@ -144,10 +144,10 @@ export default async function dashboardRoutes(app) {
         to_char(m.m, 'YYYY-MM') AS month,
         COALESCE((SELECT SUM(amount) FROM transactions
           WHERE user_id = $1 AND type = 'income' AND status = 'completed'
-          AND paid_date >= m.m AND paid_date < m.m + INTERVAL '1 month'), 0) AS income,
+          AND paid_date >= m.m AND paid_date < m.m + INTERVAL '1 month' AND deleted_at IS NULL), 0) AS income,
         COALESCE((SELECT SUM(amount) FROM transactions
           WHERE user_id = $1 AND type = 'expense' AND status = 'completed'
-          AND paid_date >= m.m AND paid_date < m.m + INTERVAL '1 month'), 0) AS expense
+          AND paid_date >= m.m AND paid_date < m.m + INTERVAL '1 month' AND deleted_at IS NULL), 0) AS expense
       FROM months m
       ORDER BY m.m ASC
     `, [userId])
@@ -185,14 +185,14 @@ export default async function dashboardRoutes(app) {
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
       WHERE user_id = $1 AND type = 'income' AND status = 'completed'
-        AND paid_date BETWEEN $2 AND $3
+        AND paid_date BETWEEN $2 AND $3 AND deleted_at IS NULL
     `, [userId, startDate, endDate])
 
     const expenseRes = await query(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
       WHERE user_id = $1 AND type = 'expense' AND status = 'completed'
-        AND paid_date BETWEEN $2 AND $3
+        AND paid_date BETWEEN $2 AND $3 AND deleted_at IS NULL
     `, [userId, startDate, endDate])
 
     // Mês anterior para comparação
@@ -206,39 +206,39 @@ export default async function dashboardRoutes(app) {
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
       WHERE user_id = $1 AND type = 'income' AND status = 'completed'
-        AND paid_date BETWEEN $2 AND $3
+        AND paid_date BETWEEN $2 AND $3 AND deleted_at IS NULL
     `, [userId, prevStart, prevEnd])
 
     const prevExpenseRes = await query(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
       WHERE user_id = $1 AND type = 'expense' AND status = 'completed'
-        AND paid_date BETWEEN $2 AND $3
+        AND paid_date BETWEEN $2 AND $3 AND deleted_at IS NULL
     `, [userId, prevStart, prevEnd])
 
     // Dívidas pendentes
     const debtsPayableRes = await query(`
       SELECT COALESCE(SUM(amount - paid_amount), 0) as total, COUNT(*) as count
       FROM debts
-      WHERE user_id = $1 AND type = 'payable' AND status IN ('pending', 'partial', 'overdue')
+      WHERE user_id = $1 AND type = 'payable' AND status IN ('pending', 'partial', 'overdue') AND deleted_at IS NULL
     `, [userId])
 
     const debtsReceivableRes = await query(`
       SELECT COALESCE(SUM(amount - paid_amount), 0) as total, COUNT(*) as count
       FROM debts
-      WHERE user_id = $1 AND type = 'receivable' AND status IN ('pending', 'partial', 'overdue')
+      WHERE user_id = $1 AND type = 'receivable' AND status IN ('pending', 'partial', 'overdue') AND deleted_at IS NULL
     `, [userId])
 
     // Dívidas vencidas
     const overdueRes = await query(`
       SELECT COUNT(*) as count FROM debts
-      WHERE user_id = $1 AND status != 'paid' AND due_date < CURRENT_DATE
+      WHERE user_id = $1 AND status != 'paid' AND due_date < CURRENT_DATE AND deleted_at IS NULL
     `, [userId])
 
     // Produtos com estoque baixo
     const lowStockRes = await query(`
       SELECT COUNT(*) as count FROM products
-      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0
+      WHERE user_id = $1 AND active = true AND stock_quantity <= min_stock AND min_stock > 0 AND deleted_at IS NULL
     `, [userId])
 
     // Empréstimos ativos
@@ -249,7 +249,7 @@ export default async function dashboardRoutes(app) {
         COUNT(li.id) FILTER (WHERE NOT li.paid AND li.due_date < CURRENT_DATE AND l.status = 'active') as overdue_installments
       FROM loans l
       LEFT JOIN loan_installments li ON li.loan_id = l.id
-      WHERE l.user_id = $1
+      WHERE l.user_id = $1 AND l.deleted_at IS NULL
     `, [userId])
 
     // Gráfico mensal (últimos 6 meses)
@@ -261,6 +261,7 @@ export default async function dashboardRoutes(app) {
       FROM transactions
       WHERE user_id = $1 AND status = 'completed'
         AND COALESCE(paid_date, due_date, created_at::date) >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+        AND deleted_at IS NULL
       GROUP BY 1, 2
       ORDER BY 1
     `, [userId])
@@ -270,7 +271,7 @@ export default async function dashboardRoutes(app) {
       SELECT t.*, c.name as category_name, c.color as category_color
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
-      WHERE t.user_id = $1
+      WHERE t.user_id = $1 AND t.deleted_at IS NULL
       ORDER BY t.created_at DESC
       LIMIT 10
     `, [userId])
@@ -278,7 +279,7 @@ export default async function dashboardRoutes(app) {
     // Próximos eventos
     const eventsRes = await query(`
       SELECT * FROM calendar_events
-      WHERE user_id = $1 AND start_date >= NOW()
+      WHERE user_id = $1 AND start_date >= NOW() AND deleted_at IS NULL
       ORDER BY start_date ASC
       LIMIT 5
     `, [userId])
@@ -345,6 +346,7 @@ export default async function dashboardRoutes(app) {
         AND t.status = 'completed'
         AND t.paid_date BETWEEN $2 AND $3
         AND t.user_id = $1
+        AND t.deleted_at IS NULL
       WHERE c.user_id = $1 AND c.type = 'expense'
       GROUP BY c.id, c.name, c.color
       HAVING COALESCE(SUM(t.amount), 0) > 0

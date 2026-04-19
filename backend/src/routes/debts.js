@@ -39,7 +39,7 @@ export default async function debtsRoutes(app) {
     const userId = request.user.id
     const { type, status, page = 1, limit = 20, search, start_date, end_date } = request.query
 
-    const conditions = ['d.user_id = $1']
+    const conditions = ['d.user_id = $1', 'd.deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -76,7 +76,7 @@ export default async function debtsRoutes(app) {
     // Auto-marcar vencidas
     await query(`
       UPDATE debts SET status = 'overdue', updated_at = NOW()
-      WHERE user_id = $1 AND due_date < CURRENT_DATE AND status = 'pending'
+      WHERE user_id = $1 AND due_date < CURRENT_DATE AND status = 'pending' AND deleted_at IS NULL
     `, [userId])
 
     return {
@@ -90,7 +90,7 @@ export default async function debtsRoutes(app) {
   // Buscar por ID com pagamentos
   app.get('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const result = await query(
-      'SELECT * FROM debts WHERE id = $1 AND user_id = $2',
+      'SELECT * FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
       [request.params.id, request.user.id]
     )
     if (!result.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
@@ -157,7 +157,7 @@ export default async function debtsRoutes(app) {
     const userId = request.user.id
     const { description, amount, type, status, contact_name, contact_phone, due_date, installments, notes } = request.body
 
-    const check = await query('SELECT id FROM debts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT id FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const result = await query(`
@@ -165,7 +165,7 @@ export default async function debtsRoutes(app) {
         description = $1, amount = $2, type = $3, status = $4,
         contact_name = $5, contact_phone = $6, due_date = $7,
         installments = $8, notes = $9, updated_at = NOW()
-      WHERE id = $10 AND user_id = $11
+      WHERE id = $10 AND user_id = $11 AND deleted_at IS NULL
       RETURNING *
     `, [description, amount, type, status, contact_name || null, contact_phone || null, due_date || null, installments || 1, notes || null, request.params.id, userId])
 
@@ -183,7 +183,7 @@ export default async function debtsRoutes(app) {
       return reply.code(400).send({ error: 'Valor do pagamento inválido' })
     }
 
-    const debtRes = await query('SELECT * FROM debts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const debtRes = await query('SELECT * FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!debtRes.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const debt = debtRes.rows[0]
@@ -202,7 +202,7 @@ export default async function debtsRoutes(app) {
     // Atualizar dívida
     const result = await query(`
       UPDATE debts SET paid_amount = $1, status = $2, updated_at = NOW()
-      WHERE id = $3 RETURNING *
+      WHERE id = $3 AND deleted_at IS NULL RETURNING *
     `, [newPaidAmount, newStatus, request.params.id])
 
     await logActivity(userId, 'PAYMENT', 'debt', request.params.id,
@@ -215,10 +215,10 @@ export default async function debtsRoutes(app) {
   // Deletar dívida
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const check = await query('SELECT id FROM debts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT id FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
-    await query('DELETE FROM debts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    await query('UPDATE debts SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     await logActivity(userId, 'DELETE', 'debt', request.params.id, 'Dívida removida')
     invalidateDashboardCache(userId)
 
@@ -230,7 +230,7 @@ export default async function debtsRoutes(app) {
     const userId = request.user.id
     const { type, status } = request.query
 
-    const conditions = ['user_id = $1']
+    const conditions = ['user_id = $1', 'deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -257,7 +257,7 @@ export default async function debtsRoutes(app) {
 
   // PDF de cobrança
   app.get('/:id/pdf', { preHandler: [app.authenticate] }, async (request, reply) => {
-    const debtRes = await query('SELECT * FROM debts WHERE id = $1 AND user_id = $2', [request.params.id, request.user.id])
+    const debtRes = await query('SELECT * FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, request.user.id])
     if (!debtRes.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const debt = debtRes.rows[0]
@@ -419,7 +419,7 @@ export default async function debtsRoutes(app) {
         COALESCE(SUM(paid_amount), 0) as total_paid,
         COALESCE(SUM(amount - paid_amount), 0) as total_remaining
       FROM debts
-      WHERE user_id = $1
+      WHERE user_id = $1 AND deleted_at IS NULL
       GROUP BY type, status
     `, [userId])
 

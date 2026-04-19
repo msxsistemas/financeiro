@@ -75,7 +75,10 @@ export default async function authRoutes(app) {
     return {
       token,
       refresh_token: refreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: {
+        id: user.id, name: user.name, email: user.email, role: user.role,
+        must_change_password: !!user.must_change_password
+      }
     }
   })
 
@@ -125,7 +128,7 @@ export default async function authRoutes(app) {
   // Perfil atual
   app.get('/me', { preHandler: [app.authenticate] }, async (request) => {
     const result = await query(
-      'SELECT id, name, email, role, totp_enabled, pix_key, pix_key_type, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, role, totp_enabled, pix_key, pix_key_type, must_change_password, created_at FROM users WHERE id = $1',
       [request.user.id]
     )
     return result.rows[0]
@@ -171,7 +174,7 @@ export default async function authRoutes(app) {
     if (!valid) return reply.code(401).send({ error: 'Senha atual incorreta' })
 
     const hash = await bcrypt.hash(new_password, 10)
-    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, request.user.id])
+    await query('UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2', [hash, request.user.id])
     return { message: 'Senha alterada com sucesso' }
   })
 

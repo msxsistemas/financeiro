@@ -23,6 +23,7 @@ export default async function delinquentsRoutes(app) {
         AND type = 'receivable'
         AND status NOT IN ('paid')
         AND due_date < CURRENT_DATE
+        AND deleted_at IS NULL
       ORDER BY due_date ASC
     `, [userId])
 
@@ -43,6 +44,7 @@ export default async function delinquentsRoutes(app) {
         AND NOT li.paid
         AND li.due_date < CURRENT_DATE
         AND l.status = 'active'
+        AND l.deleted_at IS NULL
       ORDER BY li.due_date ASC
     `, [userId])
 
@@ -99,7 +101,7 @@ export default async function delinquentsRoutes(app) {
       SELECT id, description, contact_name, contact_phone,
         amount - paid_amount AS remaining, due_date,
         CURRENT_DATE - due_date::date AS days_overdue, 'debt' AS source, status
-      FROM debts WHERE user_id=$1 AND type='receivable' AND status NOT IN ('paid') AND due_date < CURRENT_DATE
+      FROM debts WHERE user_id=$1 AND type='receivable' AND status NOT IN ('paid') AND due_date < CURRENT_DATE AND deleted_at IS NULL
       ORDER BY due_date ASC
     `, [userId])
 
@@ -108,7 +110,7 @@ export default async function delinquentsRoutes(app) {
         li.total_amount + li.late_fee_amount AS remaining, li.due_date,
         CURRENT_DATE - li.due_date::date AS days_overdue, 'loan' AS source, li.installment_number
       FROM loan_installments li JOIN loans l ON l.id = li.loan_id
-      WHERE li.user_id=$1 AND NOT li.paid AND li.due_date < CURRENT_DATE AND l.status='active'
+      WHERE li.user_id=$1 AND NOT li.paid AND li.due_date < CURRENT_DATE AND l.status='active' AND l.deleted_at IS NULL
       ORDER BY li.due_date ASC
     `, [userId])
 
@@ -195,6 +197,7 @@ export default async function delinquentsRoutes(app) {
       WHERE user_id = $1 AND type = 'receivable'
         AND status NOT IN ('paid') AND due_date < CURRENT_DATE
         AND contact_phone IS NOT NULL AND contact_phone != ''
+        AND deleted_at IS NULL
       GROUP BY contact_phone, contact_name
     `, [userId])
 
@@ -206,6 +209,7 @@ export default async function delinquentsRoutes(app) {
       WHERE li.user_id = $1 AND NOT li.paid
         AND li.due_date < CURRENT_DATE AND l.status = 'active'
         AND l.contact_phone IS NOT NULL AND l.contact_phone != ''
+        AND l.deleted_at IS NULL
       GROUP BY l.contact_phone, l.contact_name
     `, [userId])
 

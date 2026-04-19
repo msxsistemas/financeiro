@@ -40,7 +40,7 @@ export default async function calendarRoutes(app) {
       FROM calendar_events ce
       JOIN users u ON u.id = ce.user_id
       LEFT JOIN whatsapp_settings ws ON ws.user_id = ce.user_id
-      WHERE ce.id = $1 AND ce.user_id = $2
+      WHERE ce.id = $1 AND ce.user_id = $2 AND ce.deleted_at IS NULL
     `, [id, userId])
     const ev = r.rows[0]
     if (!ev) return reply.code(404).send({ error: 'Agendamento não encontrado' })
@@ -76,7 +76,7 @@ export default async function calendarRoutes(app) {
     const userId = request.user.id
     const { start_date, end_date, page = 1, limit = 20 } = request.query
 
-    const conditions = ['user_id = $1']
+    const conditions = ['user_id = $1', 'deleted_at IS NULL']
     const params = [userId]
     let idx = 2
 
@@ -160,7 +160,7 @@ export default async function calendarRoutes(app) {
     const userId = request.user.id
     const { title, description, start_date, end_date, notify_whatsapp, notify_phone, reminder_minutes, custom_message } = request.body
 
-    const check = await query('SELECT * FROM calendar_events WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT * FROM calendar_events WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const event = check.rows[0]
@@ -197,7 +197,7 @@ export default async function calendarRoutes(app) {
         title = $1, description = $2, start_date = $3, end_date = $4,
         notify_whatsapp = $5, notify_phone = $6, reminder_minutes = $7,
         custom_message = $8, updated_at = NOW()
-      WHERE id = $9 AND user_id = $10 RETURNING *
+      WHERE id = $9 AND user_id = $10 AND deleted_at IS NULL RETURNING *
     `, [title, description || null, start_date, end_date || null, notify_whatsapp || false, notify_phone || null, reminder_minutes || 30, custom_message || null, request.params.id, userId])
 
     return result.rows[0]
@@ -206,7 +206,7 @@ export default async function calendarRoutes(app) {
   // Deletar evento
   app.delete('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const check = await query('SELECT * FROM calendar_events WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    const check = await query('SELECT * FROM calendar_events WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const event = check.rows[0]
@@ -225,7 +225,7 @@ export default async function calendarRoutes(app) {
       }
     }
 
-    await query('DELETE FROM calendar_events WHERE id = $1 AND user_id = $2', [request.params.id, userId])
+    await query('UPDATE calendar_events SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     return { message: 'Removido com sucesso' }
   })
 
