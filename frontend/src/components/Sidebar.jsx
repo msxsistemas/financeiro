@@ -1,19 +1,19 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
-import NotificationBell from './NotificationBell'
 import { useTheme } from '../context/ThemeContext'
+import Icon from './Icon'
 
 const navItems = [
-  { path: '/', icon: '📊', label: 'Dashboard', exact: true },
+  { path: '/', icon: 'dashboard', label: 'Dashboard', exact: true },
   {
-    path: '/debts', icon: '📋', label: 'Dívidas',
+    path: '/debts', icon: 'debts', label: 'Dívidas',
     children: [
       { path: '/debts/payable', label: 'A Pagar' },
       { path: '/debts/receivable', label: 'A Receber' },
     ]
   },
   {
-    path: '/iptv', icon: '📺', label: 'IPTV',
+    path: '/iptv', icon: 'iptv', label: 'IPTV',
     children: [
       { path: '/iptv/servers', label: 'Servidores & Apps' },
       { path: '/iptv/resellers', label: 'Revendas' },
@@ -22,19 +22,19 @@ const navItems = [
       { path: '/iptv/expenses', label: 'Despesas' },
     ]
   },
-  { path: '/expenses', icon: '💸', label: 'Despesas' },
-  { path: '/products', icon: '📦', label: 'Produtos' },
-  { path: '/categories', icon: '🏷️', label: 'Categorias' },
-  { path: '/reports', icon: '📈', label: 'Relatórios' },
-  { path: '/calendar', icon: '📅', label: 'Agenda' },
-  { path: '/whatsapp', icon: '💬', label: 'WhatsApp' },
-  { path: '/contacts', icon: '👥', label: 'Contatos' },
-  { path: '/goals', icon: '🎯', label: 'Metas' },
-  { path: '/loans', icon: '🤝', label: 'Empréstimos' },
-  { path: '/delinquents', icon: '⚠️', label: 'Inadimplentes' },
-  { path: '/whatsapp-log', icon: '📩', label: 'Log WhatsApp' },
-  { path: '/trash', icon: '🗑️', label: 'Lixeira' },
-  { path: '/settings', icon: '⚙️', label: 'Configurações' },
+  { path: '/expenses', icon: 'expenses', label: 'Despesas' },
+  { path: '/products', icon: 'products', label: 'Produtos' },
+  { path: '/categories', icon: 'categories', label: 'Categorias' },
+  { path: '/reports', icon: 'reports', label: 'Relatórios' },
+  { path: '/calendar', icon: 'calendar', label: 'Agenda' },
+  { path: '/whatsapp', icon: 'whatsapp', label: 'WhatsApp' },
+  { path: '/contacts', icon: 'contacts', label: 'Contatos' },
+  { path: '/goals', icon: 'goals', label: 'Metas' },
+  { path: '/loans', icon: 'loans', label: 'Empréstimos' },
+  { path: '/delinquents', icon: 'delinquents', label: 'Inadimplentes' },
+  { path: '/whatsapp-log', icon: 'inbox', label: 'Log WhatsApp' },
+  { path: '/trash', icon: 'trash', label: 'Lixeira' },
+  { path: '/settings', icon: 'settings', label: 'Configurações' },
 ]
 
 export default function Sidebar() {
@@ -95,7 +95,7 @@ export default function Sidebar() {
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <span className="text-lg shrink-0">{item.icon}</span>
+                <Icon name={item.icon} size={20} className="shrink-0" />
                 {!collapsed && (
                   <>
                     <span className="flex-1 text-left">{item.label}</span>
@@ -142,7 +142,7 @@ export default function Sidebar() {
               }`
             }
           >
-            <span className="text-lg shrink-0">{item.icon}</span>
+            <Icon name={item.icon} size={20} className="shrink-0" />
             {!collapsed && <span>{item.label}</span>}
           </NavLink>
         )
@@ -178,11 +178,11 @@ export default function Sidebar() {
             <div className="border-t border-gray-700 p-4 space-y-2">
               <button onClick={toggleDark}
                 className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full">
-                <span className="text-lg">{dark ? '☀️' : '🌙'}</span>
+                <Icon name={dark ? 'sun' : 'moon'} size={18} />
                 <span>{dark ? 'Modo claro' : 'Modo escuro'}</span>
               </button>
               <button onClick={handleLogout} className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition-colors text-sm w-full">
-                <span className="text-lg">🚪</span>
+                <Icon name="logout" size={18} />
                 <span>Sair</span>
               </button>
             </div>
@@ -215,11 +215,11 @@ export default function Sidebar() {
         <div className="border-t border-gray-700 p-4 space-y-1">
           <button onClick={toggleDark}
             className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full px-0 py-2">
-            <span className="text-lg shrink-0">{dark ? '☀️' : '🌙'}</span>
+            <Icon name={dark ? 'sun' : 'moon'} size={18} className="shrink-0" />
             {!collapsed && <span>{dark ? 'Modo claro' : 'Modo escuro'}</span>}
           </button>
           <button onClick={handleLogout} className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition-colors text-sm w-full">
-            <span className="text-lg shrink-0">🚪</span>
+            <Icon name="logout" size={18} className="shrink-0" />
             {!collapsed && <span>Sair</span>}
           </button>
         </div>
