@@ -82,7 +82,7 @@ export default async function adminRoutes(app) {
       INSERT INTO users (name, email, password_hash, role, must_change_password)
       VALUES ($1, $2, $3, $4, TRUE)
       RETURNING id, name, email, role, active, created_at
-    `, [name, email.toLowerCase(), hash, role === 'admin' ? 'admin' : 'user'])
+    `, [name, email.toLowerCase(), hash, ['admin', 'user', 'operator', 'viewer'].includes(role) ? role : 'user'])
 
     await logActivity(request.user.id, 'ADMIN_CREATE_USER', 'user', r.rows[0].id, `Usuário criado: ${email}`)
     return reply.code(201).send(r.rows[0])
@@ -101,7 +101,7 @@ export default async function adminRoutes(app) {
     let idx = 1
     if (name !== undefined) { fields.push(`name = $${idx++}`); values.push(name) }
     if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email.toLowerCase()) }
-    if (role !== undefined) { fields.push(`role = $${idx++}`); values.push(role === 'admin' ? 'admin' : 'user') }
+    if (role !== undefined) { fields.push(`role = $${idx++}`); values.push(['admin', 'user', 'operator', 'viewer'].includes(role) ? role : 'user') }
     if (active !== undefined) { fields.push(`active = $${idx++}`); values.push(!!active) }
 
     if (fields.length === 0) return reply.code(400).send({ error: 'Nada a atualizar' })

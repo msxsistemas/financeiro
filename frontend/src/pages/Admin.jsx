@@ -304,8 +304,10 @@ export default function Admin() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Papel</label>
             <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
               className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="user">Usuário</option>
-              <option value="admin">Admin</option>
+              <option value="user">Usuário (acesso padrão)</option>
+              <option value="admin">Admin (acesso total)</option>
+              <option value="operator">Operador</option>
+              <option value="viewer">Viewer (apenas leitura)</option>
             </select>
           </div>
           <div className="flex gap-3 pt-2">
