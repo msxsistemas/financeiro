@@ -35,6 +35,7 @@ import productsRoutes from './routes/products.js'
 import trashRoutes, { purgeOldTrash } from './routes/trash.js'
 import adminRoutes from './routes/admin.js'
 import historyRoutes from './routes/history.js'
+import pushRoutes, { sendPushToUser } from './routes/push.js'
 
 const app = Fastify({
   logger: { level: 'info' },
@@ -186,6 +187,7 @@ await app.register(productsRoutes, { prefix: '/api/products' })
 await app.register(trashRoutes, { prefix: '/api/trash' })
 await app.register(adminRoutes, { prefix: '/api/admin' })
 await app.register(historyRoutes, { prefix: '/api/history' })
+await app.register(pushRoutes, { prefix: '/api/push' })
 
 // Health check
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
@@ -229,6 +231,74 @@ app.post('/api/webhooks/payment', async (request, reply) => {
 })
 
 // ─── CRON JOBS ────────────────────────────────────────────────
+
+// A cada minuto: push notifications para agendamentos (24h antes, 2h antes) e empréstimos vencidos
+cron.schedule('* * * * *', async () => {
+  // 24h antes de um agendamento
+  try {
+    const r24 = await query(`
+      SELECT id, title, description, start_date, user_id
+      FROM calendar_events
+      WHERE deleted_at IS NULL
+        AND push_24h_sent = false
+        AND start_date BETWEEN NOW() + INTERVAL '23 hours 30 minutes' AND NOW() + INTERVAL '24 hours 30 minutes'
+    `)
+    for (const ev of r24.rows) {
+      const d = new Date(ev.start_date)
+      const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      await sendPushToUser(ev.user_id, {
+        title: `📅 Lembrete 24h — ${ev.title}`,
+        body: `Amanhã às ${hora}${ev.description ? ' · ' + ev.description.slice(0, 80) : ''}`,
+        url: '/calendar'
+      })
+      await query('UPDATE calendar_events SET push_24h_sent = true WHERE id = $1', [ev.id])
+    }
+  } catch (err) { app.log.error({ err: err.message }, 'Erro push 24h agendamentos') }
+
+  // 2h antes de um agendamento
+  try {
+    const r2 = await query(`
+      SELECT id, title, description, start_date, user_id
+      FROM calendar_events
+      WHERE deleted_at IS NULL
+        AND push_2h_sent = false
+        AND start_date BETWEEN NOW() + INTERVAL '1 hour 30 minutes' AND NOW() + INTERVAL '2 hours 30 minutes'
+    `)
+    for (const ev of r2.rows) {
+      const d = new Date(ev.start_date)
+      const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      await sendPushToUser(ev.user_id, {
+        title: `⏰ Em 2 horas — ${ev.title}`,
+        body: `Hoje às ${hora}${ev.description ? ' · ' + ev.description.slice(0, 80) : ''}`,
+        url: '/calendar'
+      })
+      await query('UPDATE calendar_events SET push_2h_sent = true WHERE id = $1', [ev.id])
+    }
+  } catch (err) { app.log.error({ err: err.message }, 'Erro push 2h agendamentos') }
+
+  // Parcelas de empréstimo vencidas/vencendo hoje (notifica 1x por dia)
+  try {
+    const rLoans = await query(`
+      SELECT li.id, li.installment_number, li.due_date, li.total_amount,
+        l.contact_name, li.user_id
+      FROM loan_installments li
+      JOIN loans l ON l.id = li.loan_id
+      WHERE l.deleted_at IS NULL
+        AND NOT li.paid
+        AND li.due_date = CURRENT_DATE
+        AND (li.push_overdue_sent_at IS NULL OR li.push_overdue_sent_at < CURRENT_DATE)
+    `)
+    for (const inst of rLoans.rows) {
+      const fmt = v => `R$ ${parseFloat(v).toFixed(2).replace('.', ',')}`
+      await sendPushToUser(inst.user_id, {
+        title: `💰 Parcela vence hoje — ${inst.contact_name || 'Empréstimo'}`,
+        body: `Parcela ${inst.installment_number} · ${fmt(inst.total_amount)}`,
+        url: '/loans'
+      })
+      await query('UPDATE loan_installments SET push_overdue_sent_at = NOW() WHERE id = $1', [inst.id])
+    }
+  } catch (err) { app.log.error({ err: err.message }, 'Erro push parcelas') }
+})
 
 // A cada minuto: lembretes de eventos via WhatsApp
 cron.schedule('* * * * *', async () => {

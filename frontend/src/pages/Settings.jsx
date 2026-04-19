@@ -4,9 +4,11 @@ import toast from 'react-hot-toast'
 import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import MaskedInput from '../components/MaskedInput'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 import api from '../api'
 
 export default function Settings() {
+  const push = usePushNotifications()
   const [searchParams] = useSearchParams()
   const forcePassword = searchParams.get('forcePassword') === '1'
   const pwRef = useRef(null)
@@ -217,6 +219,55 @@ export default function Settings() {
             {pixLoading ? 'Salvando...' : 'Salvar PIX'}
           </button>
         </form>
+      </div>
+
+      {/* Notificações PWA */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">🔔 Notificações (PWA)</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Receba alertas no dispositivo quando uma parcela de empréstimo vencer ou um agendamento estiver próximo (24h e 2h antes).
+        </p>
+        {!push.supported ? (
+          <p className="text-sm text-gray-500">Este navegador não suporta notificações push.</p>
+        ) : push.permission === 'denied' ? (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-sm text-red-700 dark:text-red-400">
+            As notificações foram bloqueadas. Abra as configurações do navegador para este site e permita notificações.
+          </div>
+        ) : push.subscribed ? (
+          <div className="space-y-3">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2 text-sm text-green-700 dark:text-green-400">
+              ✅ Notificações ativas neste dispositivo
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <button onClick={async () => {
+                const r = await push.sendTest()
+                if (r.sent > 0) toast.success('Notificação de teste enviada!')
+                else toast.error(r.error || 'Nenhum dispositivo inscrito')
+              }}
+                className="text-xs border dark:border-gray-600 text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                🧪 Enviar teste
+              </button>
+              <button onClick={async () => {
+                await push.unsubscribe()
+                toast.success('Notificações desativadas')
+              }}
+                className="text-xs border border-red-300 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                Desativar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={async () => {
+            const r = await push.subscribe()
+            if (r.ok) toast.success('Notificações ativadas!')
+            else if (r.reason === 'permission_denied') toast.error('Permissão negada')
+            else if (r.reason === 'vapid_not_configured') toast.error('Servidor sem VAPID configurado')
+            else toast.error('Erro ao ativar notificações')
+          }} disabled={push.loading}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            {push.loading ? 'Aguarde…' : '🔔 Ativar notificações neste dispositivo'}
+          </button>
+        )}
       </div>
 
       {/* 2FA */}
