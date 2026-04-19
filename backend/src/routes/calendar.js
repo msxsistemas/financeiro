@@ -11,7 +11,26 @@ function getOAuth2Client() {
   )
 }
 
+const DEFAULT_CALENDAR_MESSAGE = `🔔 *Lembrete:* {titulo}
+📅 {data} às {hora}{descricao}`
+
 export default async function calendarRoutes(app) {
+  // Mensagem padrão (template) do usuário
+  app.get('/default-message', { preHandler: [app.authenticate] }, async (request) => {
+    const r = await query('SELECT calendar_default_message FROM users WHERE id = $1', [request.user.id])
+    return {
+      message: r.rows[0]?.calendar_default_message || DEFAULT_CALENDAR_MESSAGE,
+      is_default: !r.rows[0]?.calendar_default_message,
+      default_template: DEFAULT_CALENDAR_MESSAGE
+    }
+  })
+
+  app.put('/default-message', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const { message } = request.body
+    await query('UPDATE users SET calendar_default_message = $1 WHERE id = $2', [message || null, request.user.id])
+    return { ok: true }
+  })
+
   // Listar eventos
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id
@@ -42,7 +61,7 @@ export default async function calendarRoutes(app) {
   // Criar evento
   app.post('/', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { title, description, start_date, end_date, notify_whatsapp, notify_phone, reminder_minutes } = request.body
+    const { title, description, start_date, end_date, notify_whatsapp, notify_phone, reminder_minutes, custom_message } = request.body
 
     if (!title || !start_date) return reply.code(400).send({ error: 'Título e data de início são obrigatórios' })
 
@@ -87,10 +106,10 @@ export default async function calendarRoutes(app) {
     }
 
     const result = await query(`
-      INSERT INTO calendar_events (title, description, start_date, end_date, google_event_id, notify_whatsapp, notify_phone, reminder_minutes, user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO calendar_events (title, description, start_date, end_date, google_event_id, notify_whatsapp, notify_phone, reminder_minutes, custom_message, user_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
-    `, [title, description || null, start_date, end_date || null, google_event_id, notify_whatsapp || false, notify_phone || null, reminder_minutes || 30, userId])
+    `, [title, description || null, start_date, end_date || null, google_event_id, notify_whatsapp || false, notify_phone || null, reminder_minutes || 30, custom_message || null, userId])
 
     await logActivity(userId, 'CREATE', 'calendar_event', result.rows[0].id, `Evento criado: ${title}`)
     return reply.code(201).send(result.rows[0])
@@ -99,7 +118,7 @@ export default async function calendarRoutes(app) {
   // Atualizar evento
   app.put('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { title, description, start_date, end_date, notify_whatsapp, notify_phone, reminder_minutes } = request.body
+    const { title, description, start_date, end_date, notify_whatsapp, notify_phone, reminder_minutes, custom_message } = request.body
 
     const check = await query('SELECT * FROM calendar_events WHERE id = $1 AND user_id = $2', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
@@ -136,9 +155,10 @@ export default async function calendarRoutes(app) {
     const result = await query(`
       UPDATE calendar_events SET
         title = $1, description = $2, start_date = $3, end_date = $4,
-        notify_whatsapp = $5, notify_phone = $6, reminder_minutes = $7, updated_at = NOW()
-      WHERE id = $8 AND user_id = $9 RETURNING *
-    `, [title, description || null, start_date, end_date || null, notify_whatsapp || false, notify_phone || null, reminder_minutes || 30, request.params.id, userId])
+        notify_whatsapp = $5, notify_phone = $6, reminder_minutes = $7,
+        custom_message = $8, updated_at = NOW()
+      WHERE id = $9 AND user_id = $10 RETURNING *
+    `, [title, description || null, start_date, end_date || null, notify_whatsapp || false, notify_phone || null, reminder_minutes || 30, custom_message || null, request.params.id, userId])
 
     return result.rows[0]
   })

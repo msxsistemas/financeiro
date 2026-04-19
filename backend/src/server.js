@@ -228,9 +228,10 @@ app.post('/api/webhooks/payment', async (request, reply) => {
 cron.schedule('* * * * *', async () => {
   try {
     const events = await query(`
-      SELECT ce.*, ws.instance_token
+      SELECT ce.*, ws.instance_token, u.calendar_default_message AS user_default_message
       FROM calendar_events ce
       JOIN whatsapp_settings ws ON ws.user_id = ce.user_id
+      JOIN users u ON u.id = ce.user_id
       WHERE ce.notify_whatsapp = true
         AND ce.notified = false
         AND ce.notify_phone IS NOT NULL
@@ -242,8 +243,18 @@ cron.schedule('* * * * *', async () => {
     for (const event of events.rows) {
       try {
         const cleanPhone = event.notify_phone.replace(/\D/g, '')
-        const startTime = new Date(event.start_date).toLocaleString('pt-BR')
-        const message = `🔔 *Lembrete:* ${event.title}\n📅 ${startTime}${event.description ? '\n📝 ' + event.description : ''}`
+        const d = new Date(event.start_date)
+        const data = d.toLocaleDateString('pt-BR')
+        const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        const template = event.custom_message || event.user_default_message
+        const descSuffix = event.description ? '\n📝 ' + event.description : ''
+        const message = template
+          ? template
+              .replace(/\{titulo\}/g, event.title || '')
+              .replace(/\{data\}/g, data)
+              .replace(/\{hora\}/g, hora)
+              .replace(/\{descricao\}/g, descSuffix)
+          : `🔔 *Lembrete:* ${event.title}\n📅 ${data} às ${hora}${descSuffix}`
 
         await axios.post(`${UAZAPI_URL}/send/text`, {
           number: cleanPhone, text: message

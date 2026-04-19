@@ -8,7 +8,8 @@ import api from '../api'
 
 const defaultForm = {
   title: '', description: '', start_date: '',
-  notify_whatsapp: false, notify_phone: '', reminder_minutes: 30
+  notify_whatsapp: false, notify_phone: '', reminder_minutes: 30,
+  custom_message: ''
 }
 
 export default function Calendar() {
@@ -22,6 +23,10 @@ export default function Calendar() {
   const [form, setForm] = useState(defaultForm)
   const [period, setPeriod] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [msgModal, setMsgModal] = useState(false)
+  const [defaultMessage, setDefaultMessage] = useState('')
+  const [templateDefault, setTemplateDefault] = useState('')
+  const [savingMsg, setSavingMsg] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -40,11 +45,34 @@ export default function Calendar() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    api.get('/api/calendar/default-message').then(r => {
+      setDefaultMessage(r.data.message || '')
+      setTemplateDefault(r.data.default_template || '')
+    }).catch(() => {})
+  }, [])
+
   const openCreate = () => {
     setEditing(null)
-    setForm({ ...defaultForm, start_date: new Date().toISOString().slice(0, 16) })
+    setForm({
+      ...defaultForm,
+      start_date: new Date().toISOString().slice(0, 16),
+      custom_message: defaultMessage || ''
+    })
     setModal(true)
   }
+
+  const saveDefaultMessage = async () => {
+    setSavingMsg(true)
+    try {
+      await api.put('/api/calendar/default-message', { message: defaultMessage })
+      toast.success('Mensagem padrão salva')
+      setMsgModal(false)
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erro ao salvar')
+    } finally { setSavingMsg(false) }
+  }
+  const resetDefaultMessage = () => setDefaultMessage(templateDefault || '')
 
   const openEdit = (item) => {
     setEditing(item)
@@ -53,7 +81,8 @@ export default function Calendar() {
       start_date: new Date(item.start_date).toISOString().slice(0, 16),
       notify_whatsapp: item.notify_whatsapp || false,
       notify_phone: item.notify_phone || '',
-      reminder_minutes: item.reminder_minutes || 30
+      reminder_minutes: item.reminder_minutes || 30,
+      custom_message: item.custom_message || defaultMessage || ''
     })
     setModal(true)
   }
@@ -123,9 +152,15 @@ export default function Calendar() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agenda</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">{total} agendamentos</p>
         </div>
-        <button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          + Novo Agendamento
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setMsgModal(true)}
+            className="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium">
+            ⚙️ Mensagem padrão
+          </button>
+          <button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            + Novo Agendamento
+          </button>
+        </div>
       </div>
 
       <PeriodFilter value={period} onChange={setPeriod} />
@@ -187,23 +222,36 @@ export default function Calendar() {
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">💬 Enviar lembrete via WhatsApp</span>
             </label>
             {form.notify_whatsapp && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Número WhatsApp</label>
-                  <MaskedInput mask="phone" value={form.notify_phone} onValueChange={v => f('notify_phone', v)}
-                    className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="(11) 99999-9999" />
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Número WhatsApp</label>
+                    <MaskedInput mask="phone" value={form.notify_phone} onValueChange={v => f('notify_phone', v)}
+                      className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="(11) 99999-9999" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Lembrete (min antes)</label>
+                    <select value={form.reminder_minutes} onChange={e => f('reminder_minutes', parseInt(e.target.value))}
+                      className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value={10}>10 minutos</option>
+                      <option value={30}>30 minutos</option>
+                      <option value={60}>1 hora</option>
+                      <option value={120}>2 horas</option>
+                      <option value={1440}>1 dia antes</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Lembrete (min antes)</label>
-                  <select value={form.reminder_minutes} onChange={e => f('reminder_minutes', parseInt(e.target.value))}
-                    className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value={10}>10 minutos</option>
-                    <option value={30}>30 minutos</option>
-                    <option value={60}>1 hora</option>
-                    <option value={120}>2 horas</option>
-                    <option value={1440}>1 dia antes</option>
-                  </select>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Mensagem personalizada (opcional)</label>
+                  <textarea value={form.custom_message}
+                    onChange={e => f('custom_message', e.target.value)}
+                    rows={4}
+                    placeholder={templateDefault}
+                    className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-none" />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Variáveis: <code>{'{titulo}'}</code>, <code>{'{data}'}</code>, <code>{'{hora}'}</code>, <code>{'{descricao}'}</code> · vazio = usa mensagem padrão configurada
+                  </p>
                 </div>
               </div>
             )}
@@ -213,6 +261,39 @@ export default function Calendar() {
             <button onClick={() => setModal(false)} className="flex-1 border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
             <button onClick={handleSave} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium">
               {editing ? 'Salvar' : 'Criar'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Mensagem Padrão */}
+      <Modal open={msgModal} onClose={() => setMsgModal(false)} title="Mensagem padrão de lembrete" size="md">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Esta mensagem é usada em todos os lembretes de agendamentos enviados via WhatsApp,
+            e pré-preenche o campo "Mensagem personalizada" de novos agendamentos.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Template</label>
+            <textarea value={defaultMessage} onChange={e => setDefaultMessage(e.target.value)} rows={8}
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+              placeholder={templateDefault} />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-gray-500">
+                Variáveis: <code>{'{titulo}'}</code>, <code>{'{data}'}</code>, <code>{'{hora}'}</code>, <code>{'{descricao}'}</code>
+              </p>
+              <button onClick={resetDefaultMessage}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Restaurar padrão</button>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setMsgModal(false)}
+              className="flex-1 border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancelar
+            </button>
+            <button onClick={saveDefaultMessage} disabled={savingMsg}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-2 rounded-lg text-sm font-medium">
+              {savingMsg ? 'Salvando...' : 'Salvar mensagem'}
             </button>
           </div>
         </div>
