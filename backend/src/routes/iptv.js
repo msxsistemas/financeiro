@@ -46,7 +46,12 @@ export default async function iptvRoutes(app) {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `)
+    // Colunas adicionadas tardiamente ou que podem faltar em DBs antigos
+    await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS phone VARCHAR(30)`).catch(() => {})
     await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS credit_quantity INTEGER DEFAULT 1`).catch(() => {})
+    await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS sell_value NUMERIC(10,2) DEFAULT 0`).catch(() => {})
+    await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`).catch(() => {})
+    await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS notes TEXT`).catch(() => {})
   })
 
   // ══════════════════════════════════════════════════════════════
@@ -177,23 +182,44 @@ export default async function iptvRoutes(app) {
   })
 
   app.post('/my-clients', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { server_id, name, phone, credit_quantity, sell_value, notes } = req.body
-    if (!name || !server_id) return reply.code(400).send({ error: 'Nome e servidor sao obrigatorios' })
-    const res = await query(
-      `INSERT INTO iptv_my_clients (user_id, server_id, name, phone, credit_quantity, sell_value, notes) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.user.id, server_id, name, phone || null, parseInt(credit_quantity) || 1, sell_value || 0, notes || null]
-    )
-    return reply.code(201).send(res.rows[0])
+    try {
+      const { server_id, name, phone, credit_quantity, sell_value, notes } = req.body
+      const sid = parseInt(server_id)
+      if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
+
+      // Garante que o servidor existe e pertence ao usuário (evita FK error)
+      const srv = await query('SELECT id FROM iptv_servers WHERE id = $1 AND user_id = $2', [sid, req.user.id])
+      if (!srv.rows[0]) return reply.code(400).send({ error: 'Servidor não encontrado' })
+
+      const res = await query(
+        `INSERT INTO iptv_my_clients (user_id, server_id, name, phone, credit_quantity, sell_value, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        [req.user.id, sid, name, phone || null, parseInt(credit_quantity) || 1, parseFloat(sell_value) || 0, notes || null]
+      )
+      return reply.code(201).send(res.rows[0])
+    } catch (err) {
+      req.log.error({ err: err.message }, 'POST /my-clients falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
   })
 
   app.put('/my-clients/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { server_id, name, phone, credit_quantity, sell_value, status, notes } = req.body
-    const res = await query(
-      `UPDATE iptv_my_clients SET server_id=$1, name=$2, phone=$3, credit_quantity=$4, sell_value=$5, status=$6, notes=$7, updated_at=NOW() WHERE id=$8 AND user_id=$9 RETURNING *`,
-      [server_id, name, phone || null, parseInt(credit_quantity) || 1, sell_value || 0, status || 'active', notes || null, req.params.id, req.user.id]
-    )
-    if (!res.rows[0]) return reply.code(404).send({ error: 'Nao encontrado' })
-    return res.rows[0]
+    try {
+      const { server_id, name, phone, credit_quantity, sell_value, status, notes } = req.body
+      const sid = parseInt(server_id)
+      if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
+
+      const res = await query(
+        `UPDATE iptv_my_clients SET server_id=$1, name=$2, phone=$3, credit_quantity=$4, sell_value=$5, status=$6, notes=$7, updated_at=NOW()
+         WHERE id=$8 AND user_id=$9 RETURNING *`,
+        [sid, name, phone || null, parseInt(credit_quantity) || 1, parseFloat(sell_value) || 0, status || 'active', notes || null, req.params.id, req.user.id]
+      )
+      if (!res.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
+      return res.rows[0]
+    } catch (err) {
+      req.log.error({ err: err.message }, 'PUT /my-clients falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
   })
 
   app.delete('/my-clients/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
