@@ -266,15 +266,63 @@ export default async function iptvRoutes(app) {
       // Cria/reusa contato na agenda pelo nome
       await ensureContact(req.user.id, name, phone)
 
+      const per = period || currentPeriod()
+      const qty = parseInt(credit_quantity) || 0
+      const sell = parseFloat(credit_sell_value) || 0
+
+      // Upsert: evita duplicar quando o mesmo revendedor já foi lançado no período.
+      // Matching é por (user, server, LOWER(TRIM(name)), period).
+      const existing = await query(
+        `SELECT id FROM iptv_resellers
+         WHERE user_id = $1 AND server_id = $2
+           AND LOWER(TRIM(name)) = LOWER(TRIM($3)) AND period = $4
+         ORDER BY updated_at DESC LIMIT 1`,
+        [req.user.id, sid, name, per]
+      )
+      if (existing.rows[0]) {
+        const res = await query(
+          `UPDATE iptv_resellers SET phone=$1, credit_quantity=$2, credit_sell_value=$3, notes=$4, updated_at=NOW()
+           WHERE id=$5 RETURNING *`,
+          [phone || null, qty, sell, notes || null, existing.rows[0].id]
+        )
+        return reply.code(200).send({ ...res.rows[0], _upserted: true })
+      }
+
       const res = await query(
         `INSERT INTO iptv_resellers (user_id, server_id, name, phone, credit_quantity, credit_sell_value, notes, period)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-        [req.user.id, sid, name.trim(), phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null, period || currentPeriod()]
+        [req.user.id, sid, name.trim(), phone || null, qty, sell, notes || null, per]
       )
       return reply.code(201).send(res.rows[0])
     } catch (err) {
       req.log.error({ err: err.message }, 'POST /resellers falhou')
       return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
+  })
+
+  // Mescla duplicatas: para cada grupo (user, server, LOWER(name), period),
+  // mantém a linha com maior credit_quantity (empate → mais recente) e
+  // deleta as demais. Retorna quantas foram removidas.
+  app.post('/resellers/dedupe', { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
+      const del = await query(`
+        WITH ranked AS (
+          SELECT id,
+            ROW_NUMBER() OVER (
+              PARTITION BY server_id, LOWER(TRIM(name)), period
+              ORDER BY credit_quantity DESC, updated_at DESC, id DESC
+            ) AS rn
+          FROM iptv_resellers
+          WHERE user_id = $1
+        )
+        DELETE FROM iptv_resellers
+        WHERE id IN (SELECT id FROM ranked WHERE rn > 1)
+        RETURNING id
+      `, [req.user.id])
+      return { removed: del.rows.length }
+    } catch (err) {
+      req.log.error({ err: err.message }, 'POST /resellers/dedupe falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao mesclar' })
     }
   })
 

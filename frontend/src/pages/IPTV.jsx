@@ -132,6 +132,18 @@ export default function IPTV() {
     c.phone?.includes(contactSearch)
   ).slice(0, 8)
 
+  const [deduping, setDeduping] = useState(false)
+  const dedupeResellers = async () => {
+    if (!confirm('Mesclar revendedores duplicados? Para cada grupo (servidor + nome + mês), será mantida apenas a linha com maior quantidade.')) return
+    setDeduping(true)
+    try {
+      const { data } = await api.post('/api/iptv/resellers/dedupe')
+      toast.success(data.removed > 0 ? `${data.removed} duplicata(s) removida(s)` : 'Nenhuma duplicata encontrada')
+      load()
+    } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
+    finally { setDeduping(false) }
+  }
+
   const duplicatePrevMonth = async (kind) => {
     try {
       const from = shiftPeriod(period, -1)
@@ -439,6 +451,11 @@ export default function IPTV() {
                   📋 Copiar {periodLabel(shiftPeriod(period, -1))}
                 </button>
               )}
+              <button onClick={dedupeResellers} disabled={deduping}
+                className="border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 disabled:opacity-50 px-3 py-2 rounded-lg text-sm"
+                title="Remove linhas duplicadas do mesmo revendedor no mesmo mês">
+                {deduping ? '...' : '🧹 Mesclar duplicatas'}
+              </button>
               <button onClick={openNewReseller} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Revendedor</button>
             </div>
           </div>
