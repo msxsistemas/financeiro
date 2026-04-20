@@ -159,6 +159,73 @@ export default async function loansRoutes(app) {
     return { ok: true }
   })
 
+  // Histórico consolidado por devedor (agrupa pelo nome do contato)
+  app.get('/contact-summary', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.id
+    const { name, contact_id } = request.query
+    if (!name && !contact_id) return reply.code(400).send({ error: 'Informe name ou contact_id' })
+
+    const conditions = ['l.user_id = $1', 'l.deleted_at IS NULL']
+    const params = [userId]
+    if (contact_id) { conditions.push(`l.contact_id = $${params.length + 1}`); params.push(contact_id) }
+    else { conditions.push(`l.contact_name ILIKE $${params.length + 1}`); params.push(name) }
+
+    const loansRes = await query(`
+      SELECT l.*,
+        COUNT(li.id) FILTER (WHERE NOT li.paid) AS installments_pending,
+        COUNT(li.id) FILTER (WHERE li.paid) AS installments_paid,
+        COUNT(li.id) AS installments_total,
+        COALESCE(SUM(li.total_amount + li.late_fee_amount) FILTER (WHERE NOT li.paid), 0) AS amount_remaining,
+        COALESCE(SUM(li.paid_amount) FILTER (WHERE li.paid), 0) AS amount_paid,
+        MIN(li.due_date) FILTER (WHERE NOT li.paid) AS next_due_date,
+        COUNT(li.id) FILTER (WHERE NOT li.paid AND li.due_date < CURRENT_DATE) AS installments_overdue
+      FROM loans l
+      LEFT JOIN loan_installments li ON li.loan_id = l.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY l.id
+      ORDER BY l.created_at DESC
+    `, params)
+
+    // Histórico de pagamentos (parcelas pagas) com agrupamento por mês
+    const paymentsRes = await query(`
+      SELECT li.paid_at, li.paid_amount, li.installment_number, l.id AS loan_id, l.principal_amount AS loan_principal
+      FROM loan_installments li
+      JOIN loans l ON l.id = li.loan_id
+      WHERE ${conditions.join(' AND ')} AND li.paid = true
+      ORDER BY li.paid_at DESC
+      LIMIT 50
+    `, params)
+
+    const loans = loansRes.rows
+    const first = loans[loans.length - 1]
+    const contact = {
+      name: first?.contact_name || name || null,
+      phone: first?.contact_phone || null,
+      contact_id: first?.contact_id || contact_id || null
+    }
+
+    const summary = {
+      total_lent: loans.reduce((s, l) => s + parseFloat(l.principal_amount || 0), 0),
+      total_paid: loans.reduce((s, l) => s + parseFloat(l.amount_paid || 0), 0),
+      total_owed: loans.reduce((s, l) => s + parseFloat(l.amount_remaining || 0), 0),
+      loans_count: {
+        active: loans.filter(l => l.status === 'active').length,
+        paid: loans.filter(l => l.status === 'paid').length,
+        defaulted: loans.filter(l => l.status === 'defaulted').length,
+        total: loans.length
+      },
+      installments: {
+        paid: loans.reduce((s, l) => s + parseInt(l.installments_paid || 0), 0),
+        pending: loans.reduce((s, l) => s + parseInt(l.installments_pending || 0), 0),
+        overdue: loans.reduce((s, l) => s + parseInt(l.installments_overdue || 0), 0)
+      },
+      first_loan_at: loans.length ? loans[loans.length - 1].created_at : null,
+      last_loan_at: loans.length ? loans[0].created_at : null
+    }
+
+    return { contact, summary, loans, payments: paymentsRes.rows }
+  })
+
   // Listar empréstimos
   app.get('/', { preHandler: [app.authenticate] }, async (request) => {
     const userId = request.user.id

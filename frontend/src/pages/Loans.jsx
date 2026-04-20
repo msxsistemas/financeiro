@@ -56,6 +56,9 @@ export default function Loans() {
   const [detailModal, setDetailModal] = useState(false)
   const [payModal, setPayModal] = useState(false)
   const [msgModal, setMsgModal] = useState(false)
+  const [historyModal, setHistoryModal] = useState(false)
+  const [historyData, setHistoryData] = useState(null)
+  const [loadingHistory, setLoadingHistory] = useState(false)
   const [defaultMessage, setDefaultMessage] = useState('')
   const [templateDefault, setTemplateDefault] = useState('')
   const [savingMsg, setSavingMsg] = useState(false)
@@ -104,6 +107,23 @@ export default function Loans() {
       setDetail(data)
       setDetailModal(true)
     } catch { toast.error('Erro ao carregar detalhes') }
+  }
+
+  const openHistory = async (item) => {
+    if (!item.contact_name) return toast.error('Sem devedor vinculado')
+    setLoadingHistory(true)
+    setHistoryModal(true)
+    setHistoryData(null)
+    try {
+      const params = new URLSearchParams()
+      if (item.contact_id) params.set('contact_id', item.contact_id)
+      else params.set('name', item.contact_name)
+      const { data } = await api.get(`/api/loans/contact-summary?${params}`)
+      setHistoryData(data)
+    } catch {
+      toast.error('Erro ao carregar histórico')
+      setHistoryModal(false)
+    } finally { setLoadingHistory(false) }
   }
 
   const openCreate = () => {
@@ -398,9 +418,12 @@ export default function Loans() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 cursor-pointer" onClick={() => openDetail(item)}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-gray-800 dark:text-white">
+                    <button type="button"
+                      onClick={(e) => { e.stopPropagation(); openHistory(item) }}
+                      className="font-semibold text-gray-800 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                      title="Ver histórico deste devedor">
                       {item.contact_name || 'Sem nome'}
-                    </span>
+                    </button>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor[item.status]}`}>
                       {statusLabel[item.status]}
                     </span>
@@ -881,6 +904,105 @@ export default function Loans() {
         onCancel={() => setDeleteConfirm(null)}
         confirmLabel="Remover"
       />
+
+      {/* Modal de histórico por devedor */}
+      <Modal open={historyModal} onClose={() => setHistoryModal(false)}
+        title={`Histórico — ${historyData?.contact?.name || '...'}`} size="lg">
+        {loadingHistory ? (
+          <div className="py-10"><LoadingSpinner /></div>
+        ) : historyData ? (
+          <div className="space-y-4">
+            {historyData.contact?.phone && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">📱 {historyData.contact.phone}</p>
+            )}
+
+            {/* Resumo */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-center">
+                <div className="text-xs text-red-600 dark:text-red-400">Em aberto</div>
+                <div className="font-bold text-lg text-red-700 dark:text-red-300">{fmt(historyData.summary.total_owed)}</div>
+                <div className="text-xs text-red-500 mt-1">
+                  {historyData.summary.installments.pending} parcela(s){historyData.summary.installments.overdue > 0 && ` · ${historyData.summary.installments.overdue} vencidas`}
+                </div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-center">
+                <div className="text-xs text-green-600 dark:text-green-400">Já pago</div>
+                <div className="font-bold text-lg text-green-700 dark:text-green-300">{fmt(historyData.summary.total_paid)}</div>
+                <div className="text-xs text-green-500 mt-1">{historyData.summary.installments.paid} parcela(s)</div>
+              </div>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 text-center">
+                <div className="text-xs text-indigo-600 dark:text-indigo-400">Total emprestado</div>
+                <div className="font-bold text-lg text-indigo-700 dark:text-indigo-300">{fmt(historyData.summary.total_lent)}</div>
+                <div className="text-xs text-indigo-500 mt-1">
+                  {historyData.summary.loans_count.total} empréstimo(s)
+                </div>
+              </div>
+            </div>
+
+            {historyData.summary.first_loan_at && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                Cliente desde {fmtDate(historyData.summary.first_loan_at)}
+              </p>
+            )}
+
+            {/* Lista de empréstimos */}
+            <div>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                Empréstimos ({historyData.loans.length})
+              </h3>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {historyData.loans.map(loan => (
+                  <button key={loan.id} type="button"
+                    onClick={() => { setHistoryModal(false); openDetail(loan) }}
+                    className="w-full text-left bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:border-indigo-400 transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-800 dark:text-white">{fmt(loan.principal_amount)}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[loan.status]}`}>{statusLabel[loan.status]}</span>
+                          {parseInt(loan.installments_overdue) > 0 && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">{loan.installments_overdue} vencida(s)</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {fmtDate(loan.created_at)} · {loan.installments_paid}/{loan.installments_total} pagas
+                          {parseFloat(loan.interest_rate) > 0 && ` · ${fmtRate(loan.interest_rate)}% ${loan.interest_type === 'compound' ? 'composto' : 'simples'}`}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-bold text-red-600">{fmt(loan.amount_remaining)}</div>
+                        <div className="text-xs text-gray-400">em aberto</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Histórico de pagamentos (últimas 10) */}
+            {historyData.payments?.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                  Últimos pagamentos
+                </h3>
+                <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                  {historyData.payments.slice(0, 10).map((p, i) => (
+                    <div key={i} className="flex justify-between text-xs text-gray-600 dark:text-gray-400 py-1 border-b border-gray-100 dark:border-gray-700">
+                      <span>{p.paid_at ? fmtDate(p.paid_at) : '—'} · parcela {p.installment_number}</span>
+                      <span className="font-semibold text-green-600">+{fmt(p.paid_amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button onClick={() => setHistoryModal(false)}
+              className="w-full border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+              Fechar
+            </button>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   )
 }
