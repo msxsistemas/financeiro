@@ -22,7 +22,8 @@ const statusColor = {
 
 const defaultForm = {
   description: '', amount: '', type: 'payable', contact_name: '',
-  contact_phone: '', due_date: '', installments: 1, notes: '', auto_installments: false
+  contact_phone: '', due_date: '', installments: 1, notes: '', auto_installments: false,
+  is_recurring: false
 }
 
 export default function Debts({ forcedTab }) {
@@ -111,8 +112,10 @@ export default function Debts({ forcedTab }) {
     setForm({
       description: item.description, amount: item.amount, type: item.type,
       contact_name: item.contact_name || '', contact_phone: item.contact_phone || '',
-      due_date: item.due_date?.split('T')[0] || '', installments: item.installments || 1,
-      notes: item.notes || '', status: item.status
+      due_date: item.due_date ? String(item.due_date).substring(0, 10) : '',
+      installments: item.installments || 1,
+      notes: item.notes || '', status: item.status,
+      is_recurring: !!item.is_recurring
     })
     setModal(true)
   }
@@ -253,6 +256,7 @@ export default function Debts({ forcedTab }) {
                       {statusLabel[item.status]}
                     </span>
                     {isOverdue && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 shrink-0">⚠️ Vencido</span>}
+                    {item.is_recurring && <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0" title="Repete todo mês">🔁 Mensal</span>}
                   </div>
                   {item.contact_name && (
                     <p className="text-sm text-gray-500">👤 {item.contact_name} {item.contact_phone && `· 📱 ${item.contact_phone}`}</p>
@@ -408,6 +412,17 @@ export default function Debts({ forcedTab }) {
             <input type="date" value={form.due_date} onChange={e => f('due_date', e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
+
+          {form.due_date && !form.auto_installments && (
+            <label className="flex items-center gap-3 cursor-pointer bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3">
+              <input type="checkbox" checked={!!form.is_recurring} onChange={e => f('is_recurring', e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded" />
+              <div>
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">🔁 Repetir todo mês</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-500">Cria uma nova dívida automaticamente no dia {form.due_date ? new Date(form.due_date + 'T12:00:00').getDate() : '—'} de cada mês</p>
+              </div>
+            </label>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>

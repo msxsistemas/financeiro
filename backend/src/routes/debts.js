@@ -17,9 +17,23 @@ const createDebtSchema = {
       due_date: { type: ['string', 'null'] },
       installments: { type: ['integer', 'null'], minimum: 1, maximum: 360 },
       notes: { type: ['string', 'null'], maxLength: 2000 },
-      auto_installments: { type: 'boolean' }
+      auto_installments: { type: 'boolean' },
+      is_recurring: { type: 'boolean' }
     }
   }
+}
+
+// Soma 1 mês a uma data YYYY-MM-DD mantendo o dia (dia 31 em fev vira último dia do mês)
+function addOneMonth(dateStr) {
+  const parts = String(dateStr).substring(0, 10).split('-')
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0)
+  const targetDay = d.getDate()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + 1)
+  const lastDayOfNext = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  d.setDate(Math.min(targetDay, lastDayOfNext))
+  const pad2 = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
 const payDebtSchema = {
@@ -106,19 +120,22 @@ export default async function debtsRoutes(app) {
   // Criar dívida
   app.post('/', { schema: createDebtSchema, preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { description, amount, type, contact_name, contact_phone, due_date, installments, notes, auto_installments } = request.body
+    const { description, amount, type, contact_name, contact_phone, due_date, installments, notes, auto_installments, is_recurring } = request.body
 
     if (!description || !amount || !type) {
       return reply.code(400).send({ error: 'Descrição, valor e tipo são obrigatórios' })
     }
 
     const numInstallments = parseInt(installments) || 1
+    // Recorrência mensal só faz sentido com due_date e sem parcelamento automático
+    const recurring = !!is_recurring && !!due_date && !auto_installments
+    const nextDate = recurring ? addOneMonth(due_date) : null
 
     const result = await query(`
-      INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id, is_recurring, recurrence_next_date)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
-    `, [description, amount, type, contact_name || null, contact_phone || null, due_date || null, numInstallments, notes || null, userId])
+    `, [description, amount, type, contact_name || null, contact_phone || null, due_date || null, numInstallments, notes || null, userId, recurring, nextDate])
 
     const debt = result.rows[0]
     const typeLabel = type === 'payable' ? 'A Pagar' : 'A Receber'
@@ -155,19 +172,27 @@ export default async function debtsRoutes(app) {
   // Atualizar dívida
   app.put('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { description, amount, type, status, contact_name, contact_phone, due_date, installments, notes } = request.body
+    const { description, amount, type, status, contact_name, contact_phone, due_date, installments, notes, is_recurring } = request.body
 
-    const check = await query('SELECT id FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
+    const check = await query('SELECT id, due_date, is_recurring FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
+
+    const cur = check.rows[0]
+    const newDue = due_date ?? cur.due_date
+    const newDueStr = newDue instanceof Date ? newDue.toISOString().split('T')[0] : (newDue ? String(newDue).substring(0, 10) : null)
+    const newRecurring = is_recurring != null ? !!is_recurring : cur.is_recurring
+    const nextDate = newRecurring && newDueStr ? addOneMonth(newDueStr) : null
 
     const result = await query(`
       UPDATE debts SET
         description = $1, amount = $2, type = $3, status = $4,
         contact_name = $5, contact_phone = $6, due_date = $7,
-        installments = $8, notes = $9, updated_at = NOW()
-      WHERE id = $10 AND user_id = $11 AND deleted_at IS NULL
+        installments = $8, notes = $9,
+        is_recurring = $10, recurrence_next_date = $11,
+        updated_at = NOW()
+      WHERE id = $12 AND user_id = $13 AND deleted_at IS NULL
       RETURNING *
-    `, [description, amount, type, status, contact_name || null, contact_phone || null, due_date || null, installments || 1, notes || null, request.params.id, userId])
+    `, [description, amount, type, status, contact_name || null, contact_phone || null, due_date || null, installments || 1, notes || null, newRecurring, nextDate, request.params.id, userId])
 
     await logActivity(userId, 'UPDATE', 'debt', request.params.id, `Dívida atualizada: ${description}`)
     invalidateDashboardCache(userId)

@@ -697,6 +697,52 @@ cron.schedule('0 0 * * *', async () => {
   }
 })
 
+// Dívidas recorrentes mensais — spawn próxima ocorrência à meia-noite
+cron.schedule('5 0 * * *', async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const recurring = await query(`
+      SELECT * FROM debts
+      WHERE is_recurring = true
+        AND recurrence_next_date IS NOT NULL
+        AND recurrence_next_date <= $1
+        AND deleted_at IS NULL
+    `, [today])
+
+    for (const d of recurring.rows) {
+      try {
+        const dueStr = d.recurrence_next_date instanceof Date
+          ? d.recurrence_next_date.toISOString().split('T')[0]
+          : String(d.recurrence_next_date).substring(0, 10)
+
+        // Cria a nova ocorrência (sem marcar como recorrente — o template é a original)
+        await query(`
+          INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id, is_recurring, recurrence_next_date)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, null)
+        `, [d.description, d.amount, d.type, d.contact_name, d.contact_phone, dueStr, d.installments || 1, d.notes, d.user_id])
+
+        // Avança o próximo vencimento do template em 1 mês
+        const parts = dueStr.split('-')
+        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0)
+        const targetDay = date.getDate()
+        date.setDate(1)
+        date.setMonth(date.getMonth() + 1)
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+        date.setDate(Math.min(targetDay, lastDay))
+        const pad2 = n => String(n).padStart(2, '0')
+        const nextStr = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+
+        await query('UPDATE debts SET recurrence_next_date = $1 WHERE id = $2', [nextStr, d.id])
+        app.log.info(`Dívida recorrente criada: ${d.description} (${dueStr})`)
+      } catch (err) {
+        app.log.error({ debtId: d.id, err: err.message }, 'Erro na dívida recorrente')
+      }
+    }
+  } catch (err) {
+    app.log.error({ err: err.message }, 'Erro no cron de dívidas recorrentes')
+  }
+})
+
 // ─── START ────────────────────────────────────────────────────
 const start = async () => {
   try {
