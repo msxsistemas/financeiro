@@ -13,6 +13,11 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(reg => {
       if (!reg) return
+      // Força verificação imediata (não espera o tick de 60s) e quando a aba volta ao foco
+      reg.update().catch(() => {})
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {})
+      })
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing
         if (!nw) return
