@@ -7,8 +7,11 @@ import PeriodFilter, { periodRange } from '../components/PeriodFilter'
 import api from '../api'
 import { formatCurrencyBRL, formatDateBR } from '../utils/masks'
 
+const todayISO = () => new Date().toISOString().split('T')[0]
+
 const defaultForm = {
-  description: '', amount: '', category_id: '', notes: '', is_recurring: false
+  description: '', amount: '', category_id: '', notes: '',
+  date: todayISO(), is_recurring: false
 }
 
 export default function Expenses() {
@@ -54,14 +57,16 @@ export default function Expenses() {
   useEffect(() => { load() }, [load])
   useEffect(() => { loadCategories() }, [loadCategories])
 
-  const openCreate = () => { setEditing(null); setForm(defaultForm); setModal(true) }
+  const openCreate = () => { setEditing(null); setForm({ ...defaultForm, date: todayISO() }); setModal(true) }
   const openEdit = (item) => {
     setEditing(item)
+    const existing = item.due_date || item.paid_date || item.created_at
     setForm({
       description: item.description || '',
       amount: item.amount != null ? String(item.amount) : '',
       category_id: item.category_id || '',
       notes: item.notes || '',
+      date: existing ? String(existing).substring(0, 10) : todayISO(),
       is_recurring: !!item.is_recurring
     })
     setModal(true)
@@ -71,15 +76,15 @@ export default function Expenses() {
     if (!form.description || !form.amount) return toast.error('Descrição e valor são obrigatórios')
     setSaving(true)
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const date = form.date || todayISO()
       const payload = {
         description: form.description,
         amount: parseFloat(form.amount),
         type: 'expense',
         status: form.is_recurring ? 'pending' : 'completed',
         category_id: form.category_id || null,
-        due_date: today,
-        paid_date: form.is_recurring ? null : today,
+        due_date: date,
+        paid_date: form.is_recurring ? null : date,
         notes: form.notes || null,
         is_recurring: !!form.is_recurring,
         recurrence_type: form.is_recurring ? 'monthly' : null
@@ -187,7 +192,7 @@ export default function Expenses() {
                           {item.category_name}
                         </span>
                       )}
-                      <span>📅 {formatDateBR(item.created_at || item.paid_date || item.due_date)}</span>
+                      <span>📅 {formatDateBR(item.paid_date || item.due_date || item.created_at)}</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
@@ -229,6 +234,14 @@ export default function Expenses() {
               </select>
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data *</label>
+            <input type="date" value={form.date}
+              onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <p className="text-xs text-gray-400 mt-1">Deixe a data de hoje ou escolha outro dia (retroativo ou futuro).</p>
+          </div>
+
           <label className="flex items-center gap-3 cursor-pointer bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3">
             <input type="checkbox" checked={!!form.is_recurring}
               onChange={e => setForm(p => ({ ...p, is_recurring: e.target.checked }))}
@@ -236,7 +249,9 @@ export default function Expenses() {
             <div>
               <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">🔁 Despesa fixa (todo mês)</p>
               <p className="text-xs text-emerald-600 dark:text-emerald-500">
-                Cria automaticamente a mesma despesa no dia {new Date().getDate()} de cada mês.
+                {form.date
+                  ? `Cria automaticamente no dia ${new Date(form.date + 'T12:00:00').getDate()} de cada mês.`
+                  : 'Cria automaticamente todo mês na data escolhida.'}
               </p>
             </div>
           </label>
