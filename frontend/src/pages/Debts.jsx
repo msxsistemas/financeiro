@@ -194,6 +194,26 @@ export default function Debts({ forcedTab }) {
     } catch (err) { toast.error(err.response?.data?.error || 'Erro ao enviar notificação') }
   }
 
+  const handleDuplicate = async (item) => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const payload = {
+        description: item.description,
+        amount: parseFloat(item.amount),
+        type: item.type,
+        contact_name: item.contact_name || null,
+        contact_phone: item.contact_phone || null,
+        due_date: today,
+        installments: 1,
+        notes: item.notes || null,
+        is_recurring: false
+      }
+      await api.post('/api/debts', payload)
+      toast.success('Dívida duplicada!')
+      load()
+    } catch (err) { toast.error(err.response?.data?.error || 'Erro ao duplicar') }
+  }
+
   const handleDelete = async (id) => {
     try { await api.delete(`/api/debts/${id}`); toast.success('Removido!'); setDeleteConfirm(null); load() }
     catch { toast.error('Erro ao remover') }
@@ -294,6 +314,7 @@ export default function Debts({ forcedTab }) {
                 {item.contact_phone && item.status !== 'paid' && (
                   <button onClick={() => handleNotify(item)} className="text-xs text-emerald-600 hover:text-emerald-800">💬 Notificar</button>
                 )}
+                <button onClick={() => handleDuplicate(item)} className="text-xs text-amber-600 hover:text-amber-800" title="Criar outra dívida igual a esta com vencimento hoje">🔁 Duplicar</button>
                 <button onClick={() => handleDownloadPDF(item)} disabled={pdfLoading === item.id} className="text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50">
                   {pdfLoading === item.id ? '⏳' : '📄 PDF'}
                 </button>

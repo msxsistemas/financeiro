@@ -13,13 +13,19 @@ const currentPeriod = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
+const currentYear = () => String(new Date().getFullYear())
+const isYear = p => !!p && /^\d{4}$/.test(p)
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const periodLabel = p => {
   if (!p) return ''
+  if (isYear(p)) return p
   const [y, m] = p.split('-')
   return `${MESES[parseInt(m) - 1]}/${y}`
 }
 const shiftPeriod = (p, delta) => {
+  if (isYear(p)) {
+    return String(parseInt(p) + delta)
+  }
   const [y, m] = p.split('-').map(Number)
   const d = new Date(y, m - 1 + delta, 1)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -141,7 +147,8 @@ export default function IPTV() {
         credit_quantity: parseInt(resellerForm.credit_quantity) || 0,
         credit_sell_value: parseFloat(resellerForm.credit_sell_value) || 0,
         notes: resellerForm.notes || null,
-        period
+        // No modo anual, não escolhemos mês específico — nova linha sempre vai pro mês corrente
+        period: isYear(period) ? currentPeriod() : period
       }
       if (editItem) await api.put(`/api/iptv/resellers/${editItem.id}`, p)
       else await api.post('/api/iptv/resellers', p)
@@ -184,7 +191,7 @@ export default function IPTV() {
         credit_quantity: parseInt(clientForm.credit_quantity) || 1,
         sell_value: parseFloat(clientForm.sell_value) || 0,
         notes: clientForm.notes || null,
-        period
+        period: isYear(period) ? currentPeriod() : period
       }
       if (editItem) await api.put(`/api/iptv/my-clients/${editItem.id}`, p)
       else await api.post('/api/iptv/my-clients', p)
@@ -216,19 +223,33 @@ export default function IPTV() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IPTV</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">Servidores, revendas e clientes · {periodLabel(period)}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Toggle Mês / Ano */}
+          <div className="inline-flex rounded-lg border dark:border-gray-600 overflow-hidden">
+            <button onClick={() => setPeriod(currentPeriod())}
+              className={`px-3 py-1.5 text-sm ${!isYear(period) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>Mês</button>
+            <button onClick={() => setPeriod(currentYear())}
+              className={`px-3 py-1.5 text-sm ${isYear(period) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>Ano</button>
+          </div>
           <button onClick={() => setPeriod(shiftPeriod(period, -1))}
-            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700" title="Mês anterior">◀</button>
+            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+            title={isYear(period) ? 'Ano anterior' : 'Mês anterior'}>◀</button>
           <select value={period} onChange={e => setPeriod(e.target.value)}
             className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-1.5 text-sm">
-            {Array.from({ length: 24 }, (_, i) => shiftPeriod(currentPeriod(), 6 - i)).map(p => (
-              <option key={p} value={p}>{periodLabel(p)}</option>
-            ))}
+            {isYear(period)
+              ? Array.from({ length: 8 }, (_, i) => String(parseInt(currentYear()) + 2 - i)).map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))
+              : Array.from({ length: 24 }, (_, i) => shiftPeriod(currentPeriod(), 6 - i)).map(p => (
+                  <option key={p} value={p}>{periodLabel(p)}</option>
+                ))
+            }
           </select>
           <button onClick={() => setPeriod(shiftPeriod(period, 1))}
-            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700" title="Próximo mês">▶</button>
-          {period !== currentPeriod() && (
-            <button onClick={() => setPeriod(currentPeriod())}
+            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+            title={isYear(period) ? 'Próximo ano' : 'Próximo mês'}>▶</button>
+          {(isYear(period) ? period !== currentYear() : period !== currentPeriod()) && (
+            <button onClick={() => setPeriod(isYear(period) ? currentYear() : currentPeriod())}
               className="text-xs text-indigo-600 hover:text-indigo-800 ml-1">Hoje</button>
           )}
         </div>
@@ -359,7 +380,7 @@ export default function IPTV() {
               {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <div className="flex gap-2">
-              {resellers.length === 0 && (
+              {resellers.length === 0 && !isYear(period) && (
                 <button onClick={() => duplicatePrevMonth('resellers')}
                   className="border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 px-3 py-2 rounded-lg text-sm">
                   📋 Copiar {periodLabel(shiftPeriod(period, -1))}
@@ -419,7 +440,7 @@ export default function IPTV() {
               {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <div className="flex gap-2">
-              {myClients.length === 0 && (
+              {myClients.length === 0 && !isYear(period) && (
                 <button onClick={() => duplicatePrevMonth('my-clients')}
                   className="border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 px-3 py-2 rounded-lg text-sm">
                   📋 Copiar {periodLabel(shiftPeriod(period, -1))}

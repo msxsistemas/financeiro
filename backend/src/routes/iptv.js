@@ -85,20 +85,31 @@ export default async function iptvRoutes(app) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   }
 
+  // Monta fragmento SQL + param para filtrar por período.
+  // Aceita 'YYYY-MM' (mês exato) ou 'YYYY' (ano inteiro, via LIKE).
+  // Retorna { sql: "col = $N" ou "col LIKE $N", value: '...' }
+  function periodFilter(period, colAlias) {
+    const col = colAlias ? `${colAlias}.period` : 'period'
+    if (period && /^\d{4}$/.test(period)) {
+      return { sql: `${col} LIKE `, value: `${period}-%`, op: 'LIKE' }
+    }
+    return { sql: `${col} = `, value: period || currentPeriod(), op: '=' }
+  }
+
   // ══════════════════════════════════════════════════════════════
   // SERVIDORES & APPS
   // ══════════════════════════════════════════════════════════════
 
   app.get('/servers', { preHandler: [app.authenticate] }, async (req) => {
-    const period = req.query.period || currentPeriod()
+    const pf = periodFilter(req.query.period)
     const res = await query(`
       SELECT s.*,
-        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS credits_sold,
-        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS reseller_revenue,
-        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_count,
-        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_revenue
+        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period ${pf.op} $2), 0) AS credits_sold,
+        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period ${pf.op} $2), 0) AS reseller_revenue,
+        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period ${pf.op} $2), 0) AS my_clients_count,
+        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period ${pf.op} $2), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
-    `, [req.user.id, period])
+    `, [req.user.id, pf.value])
     return res.rows.map(s => {
       const creditValue = parseFloat(s.credit_value)
       const creditsSold = parseInt(s.credits_sold)
@@ -155,9 +166,9 @@ export default async function iptvRoutes(app) {
 
   app.get('/resellers', { preHandler: [app.authenticate] }, async (req) => {
     const { server_id, period } = req.query
-    const filterPeriod = period || currentPeriod()
-    let where = 'r.user_id = $1 AND r.period = $2'
-    const params = [req.user.id, filterPeriod]
+    const pf = periodFilter(period)
+    let where = `r.user_id = $1 AND r.period ${pf.op} $2`
+    const params = [req.user.id, pf.value]
     if (server_id) { params.push(server_id); where += ` AND r.server_id = $${params.length}` }
     const res = await query(`
       SELECT r.*, s.name AS server_name, s.credit_value AS server_credit_value
@@ -272,9 +283,9 @@ export default async function iptvRoutes(app) {
 
   app.get('/my-clients', { preHandler: [app.authenticate] }, async (req) => {
     const { server_id, period } = req.query
-    const filterPeriod = period || currentPeriod()
-    let where = 'mc.user_id = $1 AND mc.period = $2'
-    const params = [req.user.id, filterPeriod]
+    const pf = periodFilter(period)
+    let where = `mc.user_id = $1 AND mc.period ${pf.op} $2`
+    const params = [req.user.id, pf.value]
     if (server_id) { params.push(server_id); where += ` AND mc.server_id = $${params.length}` }
     const res = await query(`
       SELECT mc.*, s.name AS server_name, s.credit_value AS server_credit_value
@@ -501,15 +512,15 @@ export default async function iptvRoutes(app) {
 
   app.get('/stats', { preHandler: [app.authenticate] }, async (req) => {
     const uid = req.user.id
-    const period = req.query.period || currentPeriod()
+    const pf = periodFilter(req.query.period)
     const serversRes = await query(`
       SELECT s.*,
-        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS credits_sold,
-        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS reseller_revenue,
-        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_count,
-        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_revenue
+        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period ${pf.op} $2), 0) AS credits_sold,
+        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period ${pf.op} $2), 0) AS reseller_revenue,
+        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period ${pf.op} $2), 0) AS my_clients_count,
+        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period ${pf.op} $2), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
-    `, [uid, period])
+    `, [uid, pf.value])
 
     let resellerRevenue = 0, resellerCost = 0, resellerCredits = 0
     let myClientsRevenue = 0, myClientsCost = 0, myClientsCount = 0
@@ -539,8 +550,8 @@ export default async function iptvRoutes(app) {
     })
 
     const resellersCount = await query(
-      `SELECT COUNT(*) FROM iptv_resellers WHERE user_id = $1 AND period = $2`,
-      [uid, period]
+      `SELECT COUNT(*) FROM iptv_resellers WHERE user_id = $1 AND period ${pf.op} $2`,
+      [uid, pf.value]
     )
     const myServersCount = serversRes.rows.length
 

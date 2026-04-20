@@ -108,6 +108,26 @@ export default function Expenses() {
     } catch { toast.error('Erro ao remover') }
   }
 
+  const handleDuplicate = async (item) => {
+    try {
+      const today = todayISO()
+      await api.post('/api/transactions', {
+        description: item.description,
+        amount: parseFloat(item.amount),
+        type: 'expense',
+        status: 'completed',
+        category_id: item.category_id || null,
+        due_date: today,
+        paid_date: today,
+        notes: item.notes || null,
+        is_recurring: false,
+        recurrence_type: null
+      })
+      toast.success('Despesa duplicada!')
+      load()
+    } catch (e) { toast.error(e.response?.data?.error || 'Erro ao duplicar') }
+  }
+
   // ── Categorias
   const openCatCreate = () => { setCatEditing(null); setCatForm({ name: '', color: '#6366f1' }); setCatModal(true) }
   const openCatEdit = (c) => { setCatEditing(c); setCatForm({ name: c.name, color: c.color || '#6366f1' }); setCatModal(true) }
@@ -200,6 +220,7 @@ export default function Expenses() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <button onClick={() => handleDuplicate(item)} className="text-xs text-amber-600 hover:text-amber-800" title="Lançar outra igual hoje">🔁 Duplicar</button>
                   <button onClick={() => openEdit(item)} className="text-xs text-gray-500 hover:text-gray-700 ml-auto">✏️ Editar</button>
                   <button onClick={() => setDeleteConfirm(item)} className="text-xs text-red-500 hover:text-red-700">🗑️</button>
                 </div>
