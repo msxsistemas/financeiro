@@ -12,7 +12,16 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import api from '../api'
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
-const fmtDate = (d) => d ? new Date(String(d).substring(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '—'
+const fmtDate = (d) => {
+  if (!d) return '—'
+  try {
+    const s = String(d).substring(0, 10)
+    if (!s) return '—'
+    const dt = new Date(s + 'T12:00:00')
+    if (isNaN(dt.getTime())) return '—'
+    return dt.toLocaleDateString('pt-BR')
+  } catch { return '—' }
+}
 const fmtRate = (v) => {
   const n = parseFloat(v)
   if (!isFinite(n)) return '0'
@@ -175,12 +184,19 @@ export default function Loans() {
       }
       const now = new Date()
       // Prioriza a parcela VENCIDA mais antiga; senão pega a próxima a vencer
+      const parseDue = (d) => {
+        if (!d) return new Date(8640000000000000) // infinito no futuro se faltar data
+        try {
+          const dt = new Date(String(d).substring(0, 10) + 'T12:00:00')
+          return isNaN(dt.getTime()) ? new Date(8640000000000000) : dt
+        } catch { return new Date(8640000000000000) }
+      }
       const overdue = open
-        .filter(i => new Date(i.due_date) < now)
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .filter(i => parseDue(i.due_date) < now)
+        .sort((a, b) => parseDue(a.due_date) - parseDue(b.due_date))
       const upcoming = open
-        .filter(i => new Date(i.due_date) >= now)
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .filter(i => parseDue(i.due_date) >= now)
+        .sort((a, b) => parseDue(a.due_date) - parseDue(b.due_date))
       const target = overdue[0] || upcoming[0]
       await api.post(`/api/loans/installments/${target.id}/notify`)
       const kind = overdue[0] ? 'vencida' : 'próxima'

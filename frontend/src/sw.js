@@ -8,7 +8,23 @@ precacheAndRoute(self.__WB_MANIFEST)
 
 self.skipWaiting()
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil((async () => {
+    // Purga caches de versões anteriores que não são gerenciados pelo workbox
+    // (evita servir index.html/assets velhos depois de deploy novo)
+    try {
+      const names = await caches.keys()
+      const current = new Set([
+        'pages', 'api-cache',
+        // Caches internos do workbox precache têm nomes tipo 'workbox-precache-v2-<scope>'
+      ])
+      await Promise.all(
+        names
+          .filter(n => !current.has(n) && !n.startsWith('workbox-precache'))
+          .map(n => caches.delete(n))
+      )
+    } catch {}
+    await self.clients.claim()
+  })())
 })
 
 // Navegação (páginas) — network-first com fallback para index.html

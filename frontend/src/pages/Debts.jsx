@@ -515,12 +515,15 @@ export default function Debts({ forcedTab }) {
                 <p className="text-sm text-gray-400">Nenhum pagamento registrado</p>
               ) : (
                 <div className="space-y-2">
-                  {detail.payments?.map(p => (
-                    <div key={p.id} className="flex justify-between text-sm py-2 border-b">
-                      <span>{new Date(p.paid_at).toLocaleDateString('pt-BR')} {p.notes && `- ${p.notes}`}</span>
-                      <span className="font-semibold text-green-600">+{fmt(p.amount)}</span>
-                    </div>
-                  ))}
+                  {detail.payments?.map(p => {
+                    const paidDate = p.paid_at ? formatDateBR(p.paid_at) : ''
+                    return (
+                      <div key={p.id} className="flex justify-between text-sm py-2 border-b">
+                        <span>{paidDate} {p.notes && `- ${p.notes}`}</span>
+                        <span className="font-semibold text-green-600">+{fmt(p.amount)}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
