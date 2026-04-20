@@ -410,7 +410,7 @@ export default async function loansRoutes(app) {
     const { paid_amount, notes } = request.body
 
     const instRes = await query(
-      'SELECT li.*, l.contact_name FROM loan_installments li JOIN loans l ON l.id = li.loan_id WHERE li.id = $1 AND li.user_id = $2',
+      'SELECT li.*, l.contact_name FROM loan_installments li JOIN loans l ON l.id = li.loan_id WHERE li.id = $1 AND li.user_id = $2 AND l.deleted_at IS NULL',
       [id, userId]
     )
     if (!instRes.rows[0]) return reply.code(404).send({ error: 'Parcela não encontrada' })
@@ -449,7 +449,7 @@ export default async function loansRoutes(app) {
       SELECT li.*, l.contact_name, l.contact_phone, l.principal_amount, l.interest_rate, l.installments
       FROM loan_installments li
       JOIN loans l ON l.id = li.loan_id
-      WHERE li.id = $1 AND li.user_id = $2
+      WHERE li.id = $1 AND li.user_id = $2 AND l.deleted_at IS NULL
     `, [id, userId])
     if (!instRes.rows[0]) return reply.code(404).send({ error: 'Parcela não encontrada' })
 
@@ -600,7 +600,7 @@ export default async function loansRoutes(app) {
       FROM loan_installments li
       JOIN loans l ON l.id = li.loan_id
       JOIN users u ON u.id = li.user_id
-      WHERE li.id = $1 AND li.user_id = $2
+      WHERE li.id = $1 AND li.user_id = $2 AND l.deleted_at IS NULL
     `, [id, userId])
     if (!instRes.rows[0]) return reply.code(404).send({ error: 'Parcela não encontrada' })
 

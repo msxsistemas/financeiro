@@ -51,7 +51,7 @@ export default async function dashboardRoutes(app) {
       SELECT COUNT(*)::int AS c
       FROM loan_installments li
       JOIN loans l ON l.id = li.loan_id
-      WHERE li.user_id = $1 AND NOT li.paid
+      WHERE li.user_id = $1 AND NOT li.paid AND l.deleted_at IS NULL
         AND li.due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
     `, [userId])
     if (upcoming.rows[0].c > 0) {

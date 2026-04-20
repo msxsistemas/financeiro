@@ -476,25 +476,23 @@ cron.schedule('30 8 * * *', async () => {
 
     for (const user of usersRes.rows) {
       try {
-        // 1. Aplicar mora em parcelas vencidas
+        // 1. Aplicar mora em parcelas vencidas (R$ fixo por dia de atraso)
         const overdueRes = await query(`
-          SELECT li.*, l.late_fee_rate, l.frequency
+          SELECT li.*, l.late_fee_rate
           FROM loan_installments li
           JOIN loans l ON l.id = li.loan_id
-          WHERE li.user_id = $1 AND NOT li.paid AND li.due_date < $2 AND l.late_fee_rate > 0
+          WHERE li.user_id = $1 AND NOT li.paid AND li.due_date < $2
+            AND l.late_fee_rate > 0 AND l.deleted_at IS NULL
         `, [user.user_id, today])
 
         for (const inst of overdueRes.rows) {
-          const rate = parseFloat(inst.late_fee_rate) / 100
-          const dueDate = new Date(inst.due_date)
-          const todayDate = new Date(today)
-          const diffMs = todayDate - dueDate
-          let periods = 1
-          if (inst.frequency === 'daily') periods = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-          else if (inst.frequency === 'weekly') periods = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7))
-          else periods = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30))
-          periods = Math.max(1, periods)
-          const lateFee = parseFloat(inst.total_amount) * rate * periods
+          const daily = parseFloat(inst.late_fee_rate) || 0
+          if (daily <= 0) continue
+          const dueDate = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00')
+          const todayDate = new Date(today + 'T12:00:00')
+          const days = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24))
+          if (days <= 0) continue
+          const lateFee = daily * days
           await query('UPDATE loan_installments SET late_fee_amount = $1 WHERE id = $2', [lateFee.toFixed(2), inst.id])
         }
 
@@ -504,6 +502,7 @@ cron.schedule('30 8 * * *', async () => {
           FROM loan_installments li
           JOIN loans l ON l.id = li.loan_id
           WHERE li.user_id = $1 AND NOT li.paid AND l.auto_notify = true AND l.status = 'active'
+            AND l.deleted_at IS NULL
             AND li.due_date = (CURRENT_DATE + (l.notify_days_before || ' days')::INTERVAL)::DATE
             AND (li.last_notified_at IS NULL OR li.last_notified_at::DATE < CURRENT_DATE)
         `, [user.user_id])
@@ -532,6 +531,7 @@ cron.schedule('30 8 * * *', async () => {
           FROM loan_installments li
           JOIN loans l ON l.id = li.loan_id
           WHERE li.user_id = $1 AND NOT li.paid AND l.auto_notify = true AND l.status = 'active'
+            AND l.deleted_at IS NULL
             AND li.due_date < $2
             AND (li.last_notified_at IS NULL OR li.last_notified_at::DATE < CURRENT_DATE)
         `, [user.user_id, today])
