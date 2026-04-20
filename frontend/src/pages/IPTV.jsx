@@ -78,6 +78,7 @@ export default function IPTV() {
   }
   const [servers, setServers] = useState([])
   const [resellers, setResellers] = useState([])
+  const [knownResellers, setKnownResellers] = useState([])
   const [myClients, setMyClients] = useState([])
   const [contacts, setContacts] = useState([])
   const [stats, setStats] = useState(null)
@@ -102,15 +103,21 @@ export default function IPTV() {
   // Filtros
   const [filterServer, setFilterServer] = useState('')
 
+  // Lançamento rápido: mapa { "serverId:nameLower": qtdString }
+  const [quickQty, setQuickQty] = useState({})
+  const [quickSaving, setQuickSaving] = useState(null)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const q = `?period=${period}`
-      const [srv, res, mc, st] = await Promise.all([
+      const [srv, res, mc, st, kn] = await Promise.all([
         api.get(`/api/iptv/servers${q}`), api.get(`/api/iptv/resellers${q}`),
-        api.get(`/api/iptv/my-clients${q}`), api.get(`/api/iptv/stats${q}`)
+        api.get(`/api/iptv/my-clients${q}`), api.get(`/api/iptv/stats${q}`),
+        api.get(`/api/iptv/resellers/known${q}`)
       ])
       setServers(srv.data); setResellers(res.data); setMyClients(mc.data); setStats(st.data)
+      setKnownResellers(kn.data || [])
     } catch { toast.error('Erro ao carregar dados') }
     finally { setLoading(false) }
   }, [period])
@@ -191,6 +198,44 @@ export default function IPTV() {
       toast.success('Salvo!'); setResellerModal(false); load()
     } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
     finally { setSaving(false) }
+  }
+
+  // Lançamento rápido: cria linha no mês corrente reusando dados do revendedor
+  const quickLaunch = async (known) => {
+    const key = `${known.server_id}:${(known.name || '').toLowerCase()}`
+    const raw = quickQty[key]
+    const qty = parseInt(raw)
+    if (!raw || isNaN(qty) || qty < 0) return toast.error('Informe a quantidade')
+    setQuickSaving(key)
+    try {
+      await api.post('/api/iptv/resellers', {
+        server_id: known.server_id,
+        name: known.name,
+        phone: known.phone || null,
+        credit_quantity: qty,
+        credit_sell_value: parseFloat(known.credit_sell_value) || 0,
+        notes: known.notes || null,
+        period: isYear(period) ? currentPeriod() : period
+      })
+      toast.success(`${known.name} lançado!`)
+      setQuickQty(p => { const n = { ...p }; delete n[key]; return n })
+      load()
+    } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
+    finally { setQuickSaving(null) }
+  }
+
+  // Pré-preenche o modal a partir de um revendedor conhecido
+  const prefillFromKnown = (known) => {
+    setResellerForm({
+      server_id: String(known.server_id || ''),
+      contact_id: '',
+      name: known.name,
+      phone: known.phone || '',
+      credit_quantity: String(known.last_quantity || ''),
+      credit_sell_value: known.credit_sell_value != null ? String(parseFloat(known.credit_sell_value)) : '',
+      notes: known.notes || ''
+    })
+    setContactSearch(known.name || '')
   }
 
   // ── My Client CRUD
@@ -398,6 +443,68 @@ export default function IPTV() {
             </div>
           </div>
 
+          {/* Lançamento rápido — revendedores já cadastrados mas sem lançamento no mês */}
+          {!isYear(period) && (() => {
+            const pending = knownResellers.filter(k =>
+              !k.has_current_entry &&
+              (!filterServer || String(k.server_id) === filterServer)
+            )
+            if (pending.length === 0) return null
+            return (
+              <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div>
+                    <h3 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                      ⚡ Lançamento rápido de {periodLabel(period)}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {pending.length} revendedor(es) cadastrado(s) sem lançamento neste mês — informe só a quantidade
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {pending.map(k => {
+                    const key = `${k.server_id}:${(k.name || '').toLowerCase()}`
+                    const qty = quickQty[key] ?? ''
+                    const isSaving = quickSaving === key
+                    return (
+                      <div key={key} className="border dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/30">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-800 dark:text-white truncate">{k.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {k.server_name} · {fmt(k.credit_sell_value)}/cred
+                            </p>
+                          </div>
+                          {k.last_quantity > 0 && (
+                            <span className="text-[10px] shrink-0 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                              últ.: {k.last_quantity}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="number" min="0" inputMode="numeric"
+                            placeholder={k.last_quantity > 0 ? `Qtd (ex: ${k.last_quantity})` : 'Qtd'}
+                            value={qty}
+                            onChange={e => setQuickQty(p => ({ ...p, [key]: e.target.value.replace(/\D/g, '') }))}
+                            onKeyDown={e => { if (e.key === 'Enter') quickLaunch(k) }}
+                            className="flex-1 min-w-0 border dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-1.5 text-sm" />
+                          <button
+                            onClick={() => quickLaunch(k)}
+                            disabled={isSaving || !qty}
+                            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap">
+                            {isSaving ? '...' : 'Lançar'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Top 5 revendedores que mais compraram no período */}
           {filteredResellers.length > 0 && (() => {
             const top = [...filteredResellers]
@@ -586,6 +693,36 @@ export default function IPTV() {
       {/* Revendedor */}
       <Modal open={resellerModal} onClose={() => setResellerModal(false)} title={editItem ? 'Editar Revendedor' : 'Novo Revendedor'} size="sm">
         <div className="space-y-4">
+          {!editItem && knownResellers.length > 0 && (
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3">
+              <label className="block text-xs font-medium text-indigo-800 dark:text-indigo-300 mb-1">
+                ⚡ Usar revendedor já cadastrado
+              </label>
+              <select
+                onChange={e => {
+                  if (!e.target.value) return
+                  const k = knownResellers.find(x => `${x.server_id}:${x.name.toLowerCase()}` === e.target.value)
+                  if (k) prefillFromKnown(k)
+                  e.target.value = ''
+                }}
+                defaultValue=""
+                className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
+                <option value="">Selecione para preencher automaticamente…</option>
+                {knownResellers.map(k => {
+                  const key = `${k.server_id}:${k.name.toLowerCase()}`
+                  return (
+                    <option key={key} value={key}>
+                      {k.name} — {k.server_name} · {fmt(k.credit_sell_value)}/cred
+                      {k.has_current_entry ? ' (já lançado)' : ''}
+                    </option>
+                  )
+                })}
+              </select>
+              <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">
+                Cadastre 1 vez — nos próximos meses é só ajustar a quantidade.
+              </p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servidor *</label>
             <select value={resellerForm.server_id} onChange={e => setResellerForm(p => ({ ...p, server_id: e.target.value }))}

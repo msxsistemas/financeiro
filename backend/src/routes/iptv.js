@@ -164,6 +164,69 @@ export default async function iptvRoutes(app) {
   // REVENDEDORES
   // ══════════════════════════════════════════════════════════════
 
+  // Lista de revendedores conhecidos (distintos por servidor + nome), com
+  // últimos valores e flag de lançamento no período atual. Usado para
+  // permitir cadastro 1x + lançamento rápido mensal.
+  app.get('/resellers/known', { preHandler: [app.authenticate] }, async (req) => {
+    const period = req.query.period || currentPeriod()
+    const checkPeriod = /^\d{4}$/.test(period) ? currentPeriod() : period
+    const res = await query(`
+      SELECT DISTINCT ON (r.server_id, LOWER(r.name))
+        r.server_id, r.name, r.phone,
+        r.credit_sell_value, r.credit_quantity AS last_quantity,
+        r.period AS last_period, r.notes,
+        s.name AS server_name, s.credit_value AS server_credit_value,
+        (SELECT r2.id FROM iptv_resellers r2
+          WHERE r2.user_id = $1 AND r2.period = $2
+            AND r2.server_id = r.server_id AND LOWER(r2.name) = LOWER(r.name)
+          LIMIT 1) AS current_entry_id,
+        (SELECT r2.credit_quantity FROM iptv_resellers r2
+          WHERE r2.user_id = $1 AND r2.period = $2
+            AND r2.server_id = r.server_id AND LOWER(r2.name) = LOWER(r.name)
+          LIMIT 1) AS current_quantity
+      FROM iptv_resellers r
+      LEFT JOIN iptv_servers s ON s.id = r.server_id
+      WHERE r.user_id = $1
+      ORDER BY r.server_id, LOWER(r.name), r.period DESC, r.updated_at DESC
+    `, [req.user.id, checkPeriod])
+    return res.rows.map(r => ({
+      ...r,
+      credit_sell_value: parseFloat(r.credit_sell_value) || 0,
+      server_credit_value: parseFloat(r.server_credit_value) || 0,
+      last_quantity: parseInt(r.last_quantity) || 0,
+      current_quantity: r.current_quantity != null ? parseInt(r.current_quantity) : null,
+      has_current_entry: !!r.current_entry_id,
+      current_entry_id: r.current_entry_id || null
+    }))
+  })
+
+  // Histórico mensal de um revendedor (por nome + servidor opcional)
+  app.get('/resellers/history', { preHandler: [app.authenticate] }, async (req) => {
+    const { name, server_id, months } = req.query
+    if (!name) return []
+    const limit = Math.min(parseInt(months) || 6, 24)
+    const params = [req.user.id, name.trim().toLowerCase()]
+    let where = 'user_id = $1 AND LOWER(TRIM(name)) = $2'
+    if (server_id) {
+      params.push(parseInt(server_id))
+      where += ` AND server_id = $${params.length}`
+    }
+    const res = await query(`
+      SELECT period, credit_quantity, credit_sell_value,
+        (credit_quantity * credit_sell_value) AS revenue
+      FROM iptv_resellers
+      WHERE ${where}
+      ORDER BY period DESC
+      LIMIT ${limit}
+    `, params)
+    return res.rows.map(r => ({
+      period: r.period,
+      credit_quantity: parseInt(r.credit_quantity) || 0,
+      credit_sell_value: parseFloat(r.credit_sell_value) || 0,
+      revenue: parseFloat(r.revenue) || 0
+    }))
+  })
+
   app.get('/resellers', { preHandler: [app.authenticate] }, async (req) => {
     const { server_id, period } = req.query
     const pf = periodFilter(period)
