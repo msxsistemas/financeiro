@@ -132,31 +132,73 @@ export default function IPTV() {
         </div>
       </div>
 
-      {/* Faturamento cards */}
-      {stats && (
+      {/* Cards contextuais por aba */}
+      {stats && tab === 'servers' && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400">Servidores</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.total_servers}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.servers_tab?.servers_count ?? stats.total_servers}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Revendedores</p>
-            <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{stats.total_resellers}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Meus Servidores</p>
-            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{myClients.length}</p>
-            <p className="text-xs text-gray-400">{stats.total_my_clients} clientes</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Créditos ativos</p>
+            <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{stats.servers_tab?.total_credits ?? 0}</p>
+            <p className="text-xs text-gray-400">revendas + clientes</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400">Faturamento</p>
-            <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(stats.total_revenue)}</p>
-            <p className="text-xs text-gray-400">Custo: {fmt(stats.total_cost)}</p>
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(stats.servers_tab?.revenue ?? 0)}</p>
+            <p className="text-xs text-gray-400">Custo: {fmt(stats.servers_tab?.cost ?? 0)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 col-span-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Líquido</p>
+            <p className={`text-xl font-bold ${(stats.servers_tab?.profit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>{fmt(stats.servers_tab?.profit ?? 0)}</p>
+            <p className="text-xs text-gray-400">{(stats.servers_tab?.margin ?? 0).toFixed(1)}% margem</p>
+          </div>
+        </div>
+      )}
+
+      {stats && tab === 'resellers' && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Revendedores</p>
+            <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{stats.resellers_tab?.count ?? 0}</p>
+            <p className="text-xs text-gray-400">{stats.resellers_tab?.credits_sold ?? 0} créditos</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Liquido</p>
-            <p className={`text-xl font-bold ${stats.total_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>{fmt(stats.total_profit)}</p>
-            <p className="text-xs text-gray-400">{stats.margin.toFixed(1)}% margem</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Faturamento</p>
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(stats.resellers_tab?.revenue ?? 0)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Custo</p>
+            <p className="text-xl font-bold text-red-500">{fmt(stats.resellers_tab?.cost ?? 0)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Líquido</p>
+            <p className={`text-xl font-bold ${(stats.resellers_tab?.profit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>{fmt(stats.resellers_tab?.profit ?? 0)}</p>
+            <p className="text-xs text-gray-400">{(stats.resellers_tab?.margin ?? 0).toFixed(1)}% margem</p>
+          </div>
+        </div>
+      )}
+
+      {stats && tab === 'my-clients' && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Clientes</p>
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.my_clients_tab?.count ?? 0}</p>
+            <p className="text-xs text-gray-400">{myClients.length} servidor(es)</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Faturamento</p>
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(stats.my_clients_tab?.revenue ?? 0)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Custo</p>
+            <p className="text-xl font-bold text-red-500">{fmt(stats.my_clients_tab?.cost ?? 0)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Líquido</p>
+            <p className={`text-xl font-bold ${(stats.my_clients_tab?.profit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>{fmt(stats.my_clients_tab?.profit ?? 0)}</p>
+            <p className="text-xs text-gray-400">{(stats.my_clients_tab?.margin ?? 0).toFixed(1)}% margem</p>
           </div>
         </div>
       )}

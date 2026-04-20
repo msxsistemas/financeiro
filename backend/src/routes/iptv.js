@@ -75,19 +75,21 @@ export default async function iptvRoutes(app) {
       const creditValue = parseFloat(s.credit_value)
       const creditsSold = parseInt(s.credits_sold)
       const resellerRev = parseFloat(s.reseller_revenue)
-      // Faturamento/Lucro por servidor consideram apenas revendedores.
-      // Meus Servidores (my_clients) é apenas contador operacional.
+      const myClients = parseInt(s.my_clients_count)
+      const myRev = parseFloat(s.my_clients_revenue)
+      const revenue = resellerRev + myRev
+      const cost = creditValue * (creditsSold + myClients)
       return {
         ...s,
         max_clients: parseInt(s.max_clients),
         credit_value: creditValue,
         credits_sold: creditsSold,
         reseller_revenue: resellerRev,
-        my_clients_count: parseInt(s.my_clients_count),
-        my_clients_revenue: parseFloat(s.my_clients_revenue),
-        total_revenue: resellerRev,
-        total_cost: creditValue * creditsSold,
-        profit: resellerRev - (creditValue * creditsSold)
+        my_clients_count: myClients,
+        my_clients_revenue: myRev,
+        total_revenue: revenue,
+        total_cost: cost,
+        profit: revenue - cost
       }
     })
   })
@@ -387,18 +389,26 @@ export default async function iptvRoutes(app) {
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
     `, [uid])
 
-    let totalRevenue = 0, totalCost = 0, totalCredits = 0, totalMyClients = 0
+    let resellerRevenue = 0, resellerCost = 0, resellerCredits = 0
+    let myClientsRevenue = 0, myClientsCost = 0, myClientsCount = 0
+
     const servers = serversRes.rows.map(s => {
       const creditsSold = parseInt(s.credits_sold)
       const myClients = parseInt(s.my_clients_count)
       const resellerRev = parseFloat(s.reseller_revenue)
       const myRev = parseFloat(s.my_clients_revenue)
       const creditValue = parseFloat(s.credit_value)
-      // Faturamento/Lucro agregam SÓ revendedores — clientes diretos
-      // (Meus Servidores) contam só pro card de contador.
-      const cost = creditValue * creditsSold
-      const revenue = resellerRev
-      totalRevenue += revenue; totalCost += cost; totalCredits += creditsSold; totalMyClients += myClients
+
+      resellerRevenue += resellerRev
+      resellerCost += creditValue * creditsSold
+      resellerCredits += creditsSold
+
+      myClientsRevenue += myRev
+      myClientsCost += creditValue * myClients
+      myClientsCount += myClients
+
+      const revenue = resellerRev + myRev
+      const cost = creditValue * (creditsSold + myClients)
       return {
         id: s.id, name: s.name, max_clients: parseInt(s.max_clients), credit_value: creditValue,
         credits_sold: creditsSold, my_clients: myClients, reseller_revenue: resellerRev, my_revenue: myRev,
@@ -407,15 +417,46 @@ export default async function iptvRoutes(app) {
     })
 
     const resellersCount = await query(`SELECT COUNT(*) FROM iptv_resellers WHERE user_id = $1`, [uid])
+    const myServersCount = serversRes.rows.length
+
+    const totalRevenue = resellerRevenue + myClientsRevenue
+    const totalCost = resellerCost + myClientsCost
 
     return {
-      total_servers: servers.length,
+      // Agregados globais (mantidos por compat, mas o frontend deve usar os breakdowns por aba)
+      total_servers: myServersCount,
       total_resellers: parseInt(resellersCount.rows[0].count),
-      total_my_clients: totalMyClients,
-      total_credits_sold: totalCredits,
+      total_my_clients: myClientsCount,
+      total_credits_sold: resellerCredits,
       total_revenue: totalRevenue, total_cost: totalCost,
       total_profit: totalRevenue - totalCost,
       margin: totalRevenue > 0 ? ((totalRevenue - totalCost) / totalRevenue * 100) : 0,
+
+      // Breakdown por aba
+      servers_tab: {
+        servers_count: myServersCount,
+        total_credits: resellerCredits + myClientsCount,
+        revenue: totalRevenue,
+        cost: totalCost,
+        profit: totalRevenue - totalCost,
+        margin: totalRevenue > 0 ? ((totalRevenue - totalCost) / totalRevenue * 100) : 0
+      },
+      resellers_tab: {
+        count: parseInt(resellersCount.rows[0].count),
+        credits_sold: resellerCredits,
+        revenue: resellerRevenue,
+        cost: resellerCost,
+        profit: resellerRevenue - resellerCost,
+        margin: resellerRevenue > 0 ? ((resellerRevenue - resellerCost) / resellerRevenue * 100) : 0
+      },
+      my_clients_tab: {
+        count: myClientsCount,
+        revenue: myClientsRevenue,
+        cost: myClientsCost,
+        profit: myClientsRevenue - myClientsCost,
+        margin: myClientsRevenue > 0 ? ((myClientsRevenue - myClientsCost) / myClientsRevenue * 100) : 0
+      },
+
       servers
     }
   })
