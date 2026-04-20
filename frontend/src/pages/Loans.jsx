@@ -581,13 +581,13 @@ export default function Loans() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Mora (% por dia de atraso)
+              Mora (R$ por dia de atraso)
             </label>
-            <MaskedInput mask="percent" value={form.late_fee_rate}
+            <MaskedInput mask="currency" value={form.late_fee_rate}
               onValueChange={v => setForm(f => ({ ...f, late_fee_rate: v }))}
-              placeholder="Ex: 1 (cobra 1% ao dia sobre o valor da parcela)"
+              placeholder="0,00"
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
-            <p className="text-xs text-gray-400 mt-1">Deixe 0 para não cobrar mora.</p>
+            <p className="text-xs text-gray-400 mt-1">Ex: R$ 5,00/dia. Deixe 0 para não cobrar mora.</p>
           </div>
 
           <div className="border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 bg-indigo-50 dark:bg-indigo-900/20">

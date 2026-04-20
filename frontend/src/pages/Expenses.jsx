@@ -8,7 +8,7 @@ import api from '../api'
 import { formatCurrencyBRL, formatDateBR } from '../utils/masks'
 
 const defaultForm = {
-  description: '', amount: '', category_id: '', notes: ''
+  description: '', amount: '', category_id: '', notes: '', is_recurring: false
 }
 
 export default function Expenses() {
@@ -61,7 +61,8 @@ export default function Expenses() {
       description: item.description || '',
       amount: item.amount != null ? String(item.amount) : '',
       category_id: item.category_id || '',
-      notes: item.notes || ''
+      notes: item.notes || '',
+      is_recurring: !!item.is_recurring
     })
     setModal(true)
   }
@@ -75,11 +76,13 @@ export default function Expenses() {
         description: form.description,
         amount: parseFloat(form.amount),
         type: 'expense',
-        status: 'completed',
+        status: form.is_recurring ? 'pending' : 'completed',
         category_id: form.category_id || null,
         due_date: today,
-        paid_date: today,
-        notes: form.notes || null
+        paid_date: form.is_recurring ? null : today,
+        notes: form.notes || null,
+        is_recurring: !!form.is_recurring,
+        recurrence_type: form.is_recurring ? 'monthly' : null
       }
       if (editing) await api.put(`/api/transactions/${editing.id}`, payload)
       else await api.post('/api/transactions', payload)
@@ -171,7 +174,12 @@ export default function Expenses() {
               <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.description}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.description}</h3>
+                      {item.is_recurring && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0" title="Despesa fixa mensal">🔁 Mensal</span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {item.category_name && (
                         <span className="inline-flex items-center gap-1">
@@ -221,6 +229,18 @@ export default function Expenses() {
               </select>
             </div>
           </div>
+          <label className="flex items-center gap-3 cursor-pointer bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3">
+            <input type="checkbox" checked={!!form.is_recurring}
+              onChange={e => setForm(p => ({ ...p, is_recurring: e.target.checked }))}
+              className="w-4 h-4 text-emerald-600 rounded" />
+            <div>
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">🔁 Despesa fixa (todo mês)</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-500">
+                Cria automaticamente a mesma despesa no dia {new Date().getDate()} de cada mês.
+              </p>
+            </div>
+          </label>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
             <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2}

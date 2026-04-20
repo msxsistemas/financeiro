@@ -84,10 +84,10 @@ function generateInstallments(loan) {
   return rows
 }
 
-// Calcula mora acumulada (% por dia de atraso sobre o valor da parcela)
+// Calcula mora acumulada (valor fixo em R$ por dia de atraso)
 function calcLateFee(inst, loan) {
-  const rate = parseFloat(loan.late_fee_rate) / 100
-  if (rate <= 0 || inst.paid) return 0
+  const daily = parseFloat(loan.late_fee_rate) || 0
+  if (daily <= 0 || inst.paid) return 0
   const dueStr = inst.due_date instanceof Date
     ? inst.due_date.toISOString().split('T')[0]
     : String(inst.due_date).substring(0, 10)
@@ -96,7 +96,7 @@ function calcLateFee(inst, loan) {
   if (today <= dueDate) return 0
   const days = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24))
   if (days <= 0) return 0
-  return parseFloat((parseFloat(inst.total_amount) * rate * days).toFixed(2))
+  return parseFloat((daily * days).toFixed(2))
 }
 
 const createLoanSchema = {
@@ -114,7 +114,7 @@ const createLoanSchema = {
       installments: { type: 'integer', minimum: 1, maximum: 360 },
       start_date: { type: ['string', 'null'] },
       first_due_date: { type: 'string' },
-      late_fee_rate: { type: ['number', 'null'], minimum: 0, maximum: 100 },
+      late_fee_rate: { type: ['number', 'null'], minimum: 0 },
       notes: { type: ['string', 'null'], maxLength: 2000 },
       auto_notify: { type: 'boolean' },
       notify_days_before: { type: 'integer', minimum: 0, maximum: 30 },
@@ -561,8 +561,8 @@ export default async function loansRoutes(app) {
     if (!loanRes.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
 
     const loan = loanRes.rows[0]
-    const rate = parseFloat(loan.late_fee_rate) / 100
-    if (rate <= 0) return { message: 'Taxa de mora zerada, nenhuma alteração' }
+    const daily = parseFloat(loan.late_fee_rate) || 0
+    if (daily <= 0) return { message: 'Valor da mora zerado, nenhuma alteração' }
 
     const today = new Date().toISOString().split('T')[0]
     const overdueRes = await query(`
@@ -578,7 +578,7 @@ export default async function loansRoutes(app) {
       const todayDate = new Date(today + 'T12:00:00')
       const days = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24))
       if (days <= 0) continue
-      const lateFee = parseFloat(inst.total_amount) * rate * days
+      const lateFee = daily * days
 
       await query(`
         UPDATE loan_installments SET late_fee_amount = $1 WHERE id = $2

@@ -138,10 +138,26 @@ export default async function transactionsRoutes(app) {
       })
     }
 
-    // Calcular próxima data de recorrência
+    // Calcular próxima data de recorrência (a original já conta como 1ª ocorrência,
+    // o cron cria as seguintes a partir de next_date)
     let recurrence_next_date = null
     if (is_recurring && recurrence_type && due_date) {
-      recurrence_next_date = due_date
+      const parts = String(due_date).substring(0, 10).split('-')
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0)
+      const targetDay = d.getDate()
+      switch (recurrence_type) {
+        case 'daily': d.setDate(d.getDate() + 1); break
+        case 'weekly': d.setDate(d.getDate() + 7); break
+        case 'monthly': {
+          d.setDate(1); d.setMonth(d.getMonth() + 1)
+          const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+          d.setDate(Math.min(targetDay, lastDay))
+          break
+        }
+        case 'yearly': d.setFullYear(d.getFullYear() + 1); break
+      }
+      const pad2 = n => String(n).padStart(2, '0')
+      recurrence_next_date = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
     }
 
     const result = await query(`
