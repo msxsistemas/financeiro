@@ -270,10 +270,12 @@ export default async function iptvRoutes(app) {
       const qty = parseInt(credit_quantity) || 0
       const sell = parseFloat(credit_sell_value) || 0
 
-      // Upsert: evita duplicar quando o mesmo revendedor já foi lançado no período.
-      // Matching é por (user, server, LOWER(TRIM(name)), period).
+      // Upsert: se já existe lançamento no período (mesmo servidor + nome),
+      // SOMA a nova quantidade à existente (acumula créditos). Demais campos
+      // (telefone, valor/cred, notas) são preservados — para alterá-los, use
+      // o botão Editar (PUT).
       const existing = await query(
-        `SELECT id FROM iptv_resellers
+        `SELECT id, credit_quantity FROM iptv_resellers
          WHERE user_id = $1 AND server_id = $2
            AND LOWER(TRIM(name)) = LOWER(TRIM($3)) AND period = $4
          ORDER BY updated_at DESC LIMIT 1`,
@@ -281,11 +283,15 @@ export default async function iptvRoutes(app) {
       )
       if (existing.rows[0]) {
         const res = await query(
-          `UPDATE iptv_resellers SET phone=$1, credit_quantity=$2, credit_sell_value=$3, notes=$4, updated_at=NOW()
-           WHERE id=$5 RETURNING *`,
-          [phone || null, qty, sell, notes || null, existing.rows[0].id]
+          `UPDATE iptv_resellers
+              SET credit_quantity = credit_quantity + $1,
+                  updated_at = NOW()
+            WHERE id = $2 RETURNING *`,
+          [qty, existing.rows[0].id]
         )
-        return reply.code(200).send({ ...res.rows[0], _upserted: true })
+        const newTotal = parseInt(res.rows[0].credit_quantity) || 0
+        const added = qty
+        return reply.code(200).send({ ...res.rows[0], _accumulated: true, _added: added, _total: newTotal })
       }
 
       const res = await query(
@@ -301,16 +307,43 @@ export default async function iptvRoutes(app) {
   })
 
   // Mescla duplicatas: para cada grupo (user, server, LOWER(name), period),
-  // mantém a linha com maior credit_quantity (empate → mais recente) e
-  // deleta as demais. Retorna quantas foram removidas.
+  // mantém a linha mais recente (kept) e SOMA as quantidades das demais
+  // nessa kept antes de deletá-las. Retorna quantas foram removidas.
   app.post('/resellers/dedupe', { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
+      // 1) Soma quantidades das duplicatas (rn>1) na linha kept (rn=1) por grupo.
+      await query(`
+        WITH ranked AS (
+          SELECT id, server_id, LOWER(TRIM(name)) AS lname, period, credit_quantity,
+            ROW_NUMBER() OVER (
+              PARTITION BY server_id, LOWER(TRIM(name)), period
+              ORDER BY updated_at DESC, id DESC
+            ) AS rn
+          FROM iptv_resellers
+          WHERE user_id = $1
+        ),
+        kept AS (SELECT id, server_id, lname, period FROM ranked WHERE rn = 1),
+        dup_sum AS (
+          SELECT k.id AS keep_id, COALESCE(SUM(d.credit_quantity), 0) AS extra
+          FROM kept k
+          LEFT JOIN ranked d
+            ON d.rn > 1 AND d.server_id = k.server_id AND d.lname = k.lname AND d.period = k.period
+          GROUP BY k.id
+        )
+        UPDATE iptv_resellers r
+           SET credit_quantity = r.credit_quantity + ds.extra,
+               updated_at = NOW()
+          FROM dup_sum ds
+         WHERE r.id = ds.keep_id AND ds.extra > 0
+      `, [req.user.id])
+
+      // 2) Apaga duplicatas
       const del = await query(`
         WITH ranked AS (
           SELECT id,
             ROW_NUMBER() OVER (
               PARTITION BY server_id, LOWER(TRIM(name)), period
-              ORDER BY credit_quantity DESC, updated_at DESC, id DESC
+              ORDER BY updated_at DESC, id DESC
             ) AS rn
           FROM iptv_resellers
           WHERE user_id = $1

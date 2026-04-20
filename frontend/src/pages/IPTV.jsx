@@ -203,11 +203,16 @@ export default function IPTV() {
         // No modo anual, não escolhemos mês específico — nova linha sempre vai pro mês corrente
         period: isYear(period) ? currentPeriod() : period
       }
-      if (editItem) await api.put(`/api/iptv/resellers/${editItem.id}`, p)
-      else await api.post('/api/iptv/resellers', p)
+      let resp
+      if (editItem) resp = await api.put(`/api/iptv/resellers/${editItem.id}`, p)
+      else resp = await api.post('/api/iptv/resellers', p)
       // Atualiza cache de contatos (backend já criou se era novo)
       api.get('/api/contacts?limit=300').then(r => setContacts(r.data.data || [])).catch(() => {})
-      toast.success('Salvo!'); setResellerModal(false); load()
+      const d = resp?.data
+      const msg = d?._accumulated
+        ? `+${d._added} créditos somados (total no mês: ${d._total})`
+        : 'Salvo!'
+      toast.success(msg); setResellerModal(false); load()
     } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
     finally { setSaving(false) }
   }
@@ -220,7 +225,7 @@ export default function IPTV() {
     if (!raw || isNaN(qty) || qty < 0) return toast.error('Informe a quantidade')
     setQuickSaving(key)
     try {
-      await api.post('/api/iptv/resellers', {
+      const { data } = await api.post('/api/iptv/resellers', {
         server_id: known.server_id,
         name: known.name,
         phone: known.phone || null,
@@ -229,21 +234,26 @@ export default function IPTV() {
         notes: known.notes || null,
         period: isYear(period) ? currentPeriod() : period
       })
-      toast.success(`${known.name} lançado!`)
+      const msg = data?._accumulated
+        ? `+${data._added} créditos para ${known.name} (total no mês: ${data._total})`
+        : `${known.name} lançado: ${qty} créditos`
+      toast.success(msg)
       setQuickQty(p => { const n = { ...p }; delete n[key]; return n })
       load()
     } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
     finally { setQuickSaving(null) }
   }
 
-  // Pré-preenche o modal a partir de um revendedor conhecido
+  // Pré-preenche o modal a partir de um revendedor conhecido. NÃO preenche
+  // credit_quantity — o usuário digita só o que vai ADICIONAR neste mês
+  // (o backend soma à quantidade já lançada, se houver).
   const prefillFromKnown = (known) => {
     setResellerForm({
       server_id: String(known.server_id || ''),
       contact_id: '',
       name: known.name,
       phone: known.phone || '',
-      credit_quantity: String(known.last_quantity || ''),
+      credit_quantity: '',
       credit_sell_value: known.credit_sell_value != null ? String(parseFloat(known.credit_sell_value)) : '',
       notes: known.notes || ''
     })
@@ -460,13 +470,13 @@ export default function IPTV() {
             </div>
           </div>
 
-          {/* Lançamento rápido — revendedores já cadastrados mas sem lançamento no mês */}
+          {/* Lançamento rápido — todos revendedores cadastrados (somar créditos no mês) */}
           {!isYear(period) && (() => {
-            const pending = knownResellers.filter(k =>
-              !k.has_current_entry &&
-              (!filterServer || String(k.server_id) === filterServer)
+            const list = knownResellers.filter(k =>
+              !filterServer || String(k.server_id) === filterServer
             )
-            if (pending.length === 0) return null
+            if (list.length === 0) return null
+            const pendingCount = list.filter(k => !k.has_current_entry).length
             return (
               <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -475,17 +485,20 @@ export default function IPTV() {
                       ⚡ Lançamento rápido de {periodLabel(period)}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {pending.length} revendedor(es) cadastrado(s) sem lançamento neste mês — informe só a quantidade
+                      Digite a quantidade vendida — soma ao total já lançado no mês.
+                      {pendingCount > 0 && ` ${pendingCount} sem lançamento ainda.`}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {pending.map(k => {
+                  {list.map(k => {
                     const key = `${k.server_id}:${(k.name || '').toLowerCase()}`
                     const qty = quickQty[key] ?? ''
                     const isSaving = quickSaving === key
+                    const launched = k.has_current_entry
+                    const cur = k.current_quantity || 0
                     return (
-                      <div key={key} className="border dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/30">
+                      <div key={key} className={`border rounded-lg p-3 ${launched ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30'}`}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="min-w-0">
                             <p className="font-medium text-gray-800 dark:text-white truncate">{k.name}</p>
@@ -493,16 +506,20 @@ export default function IPTV() {
                               {k.server_name} · {fmt(k.credit_sell_value)}/cred
                             </p>
                           </div>
-                          {k.last_quantity > 0 && (
+                          {launched ? (
+                            <span className="text-[10px] shrink-0 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">
+                              já: {cur}
+                            </span>
+                          ) : k.last_quantity > 0 ? (
                             <span className="text-[10px] shrink-0 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
                               últ.: {k.last_quantity}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <div className="flex gap-2">
                           <input
                             type="number" min="0" inputMode="numeric"
-                            placeholder={k.last_quantity > 0 ? `Qtd (ex: ${k.last_quantity})` : 'Qtd'}
+                            placeholder={launched ? `Adicionar + (atual: ${cur})` : (k.last_quantity > 0 ? `Qtd (ex: ${k.last_quantity})` : 'Qtd')}
                             value={qty}
                             onChange={e => setQuickQty(p => ({ ...p, [key]: e.target.value.replace(/\D/g, '') }))}
                             onKeyDown={e => { if (e.key === 'Enter') quickLaunch(k) }}
@@ -510,8 +527,8 @@ export default function IPTV() {
                           <button
                             onClick={() => quickLaunch(k)}
                             disabled={isSaving || !qty}
-                            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap">
-                            {isSaving ? '...' : 'Lançar'}
+                            className={`${launched ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap`}>
+                            {isSaving ? '...' : (launched ? 'Somar' : 'Lançar')}
                           </button>
                         </div>
                       </div>
