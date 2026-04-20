@@ -11,30 +11,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      if (!reg) return
-      // Força verificação imediata (não espera o tick de 60s) e quando a aba volta ao foco
-      reg.update().catch(() => {})
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') reg.update().catch(() => {})
-      })
-      reg.addEventListener('updatefound', () => {
-        const nw = reg.installing
-        if (!nw) return
-        nw.addEventListener('statechange', () => {
-          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            window.location.reload()
-          }
-        })
-      })
-      setInterval(() => reg.update().catch(() => {}), 60000)
-    }).catch(() => {})
-
-    let refreshing = false
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return
-      refreshing = true
-      window.location.reload()
-    })
+    // Registra e deixa o service worker atualizar em silêncio.
+    // Sem auto-reload — a versão nova assume naturalmente quando o
+    // usuário fecha e abre o app de novo (nginx serve index.html com
+    // no-cache, então a próxima navegação já pega os hashes novos).
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
   })
 }
