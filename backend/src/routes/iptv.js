@@ -52,6 +52,10 @@ export default async function iptvRoutes(app) {
     await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS sell_value NUMERIC(10,2) DEFAULT 0`).catch(() => {})
     await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`).catch(() => {})
     await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS notes TEXT`).catch(() => {})
+    await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS phone VARCHAR(30)`).catch(() => {})
+    await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS credit_quantity INTEGER DEFAULT 0`).catch(() => {})
+    await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS credit_sell_value NUMERIC(10,2) DEFAULT 0`).catch(() => {})
+    await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS notes TEXT`).catch(() => {})
   })
 
   // ══════════════════════════════════════════════════════════════
@@ -134,23 +138,43 @@ export default async function iptvRoutes(app) {
   })
 
   app.post('/resellers', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { server_id, name, phone, credit_quantity, credit_sell_value, notes } = req.body
-    if (!name || !server_id) return reply.code(400).send({ error: 'Nome e servidor sao obrigatorios' })
-    const res = await query(
-      `INSERT INTO iptv_resellers (user_id, server_id, name, phone, credit_quantity, credit_sell_value, notes) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.user.id, server_id, name, phone || null, credit_quantity || 0, credit_sell_value || 0, notes || null]
-    )
-    return reply.code(201).send(res.rows[0])
+    try {
+      const { server_id, name, phone, credit_quantity, credit_sell_value, notes } = req.body
+      const sid = parseInt(server_id)
+      if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
+
+      const srv = await query('SELECT id FROM iptv_servers WHERE id = $1 AND user_id = $2', [sid, req.user.id])
+      if (!srv.rows[0]) return reply.code(400).send({ error: 'Servidor não encontrado' })
+
+      const res = await query(
+        `INSERT INTO iptv_resellers (user_id, server_id, name, phone, credit_quantity, credit_sell_value, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        [req.user.id, sid, name, phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null]
+      )
+      return reply.code(201).send(res.rows[0])
+    } catch (err) {
+      req.log.error({ err: err.message }, 'POST /resellers falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
   })
 
   app.put('/resellers/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { server_id, name, phone, credit_quantity, credit_sell_value, notes } = req.body
-    const res = await query(
-      `UPDATE iptv_resellers SET server_id=$1, name=$2, phone=$3, credit_quantity=$4, credit_sell_value=$5, notes=$6, updated_at=NOW() WHERE id=$7 AND user_id=$8 RETURNING *`,
-      [server_id, name, phone || null, credit_quantity || 0, credit_sell_value || 0, notes || null, req.params.id, req.user.id]
-    )
-    if (!res.rows[0]) return reply.code(404).send({ error: 'Nao encontrado' })
-    return res.rows[0]
+    try {
+      const { server_id, name, phone, credit_quantity, credit_sell_value, notes } = req.body
+      const sid = parseInt(server_id)
+      if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
+
+      const res = await query(
+        `UPDATE iptv_resellers SET server_id=$1, name=$2, phone=$3, credit_quantity=$4, credit_sell_value=$5, notes=$6, updated_at=NOW()
+         WHERE id=$7 AND user_id=$8 RETURNING *`,
+        [sid, name, phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null, req.params.id, req.user.id]
+      )
+      if (!res.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
+      return res.rows[0]
+    } catch (err) {
+      req.log.error({ err: err.message }, 'PUT /resellers falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
   })
 
   app.delete('/resellers/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
