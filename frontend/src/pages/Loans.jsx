@@ -33,7 +33,7 @@ const defaultForm = {
   principal_amount: '', interest_rate: '0', interest_type: 'simple',
   frequency: 'monthly', installments: '1',
   start_date: new Date().toISOString().split('T')[0],
-  first_due_date: '', notes: '',
+  first_due_date: '', late_fee_rate: '0', notes: '',
   auto_notify: false, notify_days_before: '1',
   custom_message: '', send_now: false
 }
@@ -130,6 +130,7 @@ export default function Loans() {
       installments: String(item.installments || 1),
       start_date: item.start_date ? String(item.start_date).substring(0, 10) : new Date().toISOString().split('T')[0],
       first_due_date: item.first_due_date ? String(item.first_due_date).substring(0, 10) : '',
+      late_fee_rate: item.late_fee_rate != null ? String(parseFloat(item.late_fee_rate)) : '0',
       notes: item.notes || '',
       auto_notify: item.auto_notify || false,
       notify_days_before: String(item.notify_days_before || 1),
@@ -221,7 +222,7 @@ export default function Loans() {
         ...rest,
         principal_amount: parseFloat(rest.principal_amount),
         interest_rate: parseFloat(rest.interest_rate),
-        late_fee_rate: 0,
+        late_fee_rate: parseFloat(rest.late_fee_rate) || 0,
         installments: parseInt(rest.installments),
         notify_days_before: parseInt(rest.notify_days_before),
         contact_id: contactId,
@@ -578,6 +579,17 @@ export default function Loans() {
             </div>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Mora (% por dia de atraso)
+            </label>
+            <MaskedInput mask="percent" value={form.late_fee_rate}
+              onValueChange={v => setForm(f => ({ ...f, late_fee_rate: v }))}
+              placeholder="Ex: 1 (cobra 1% ao dia sobre o valor da parcela)"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
+            <p className="text-xs text-gray-400 mt-1">Deixe 0 para não cobrar mora.</p>
+          </div>
+
           <div className="border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 bg-indigo-50 dark:bg-indigo-900/20">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Cobrança Automática via WhatsApp</span>
@@ -684,7 +696,8 @@ export default function Loans() {
                   const overdue = !inst.paid && new Date(inst.due_date) < new Date()
                   const paidSoFar = parseFloat(inst.paid_amount || 0)
                   const totalAmount = parseFloat(inst.total_amount)
-                  const totalDue = Math.max(0, totalAmount - paidSoFar)
+                  const lateFee = parseFloat(inst.late_fee_amount || 0)
+                  const totalDue = Math.max(0, totalAmount + lateFee - paidSoFar)
                   return (
                     <div key={inst.id}
                       className={`flex items-center justify-between p-3 rounded-lg border text-sm
@@ -699,6 +712,9 @@ export default function Loans() {
                         </div>
                         <div className="text-gray-500 dark:text-gray-400 text-xs">
                           Venc: {fmtDate(inst.due_date)}
+                          {lateFee > 0 && !inst.paid && (
+                            <span className="text-red-600 ml-2">+ mora: {fmt(lateFee)}</span>
+                          )}
                           {paidSoFar > 0 && !inst.paid && (
                             <span className="text-green-600 ml-2">pago parcial: {fmt(paidSoFar)}</span>
                           )}
@@ -757,8 +773,10 @@ export default function Loans() {
       <Modal open={payModal} onClose={() => setPayModal(false)} title="Registrar Pagamento">
         {selectedInst && (() => {
           const totalAmount = parseFloat(selectedInst.total_amount || 0)
+          const interestAmount = parseFloat(selectedInst.interest_amount || 0)
+          const lateFee = parseFloat(selectedInst.late_fee_amount || 0)
           const alreadyPaid = parseFloat(selectedInst.paid_amount || 0)
-          const remaining = Math.max(0, totalAmount - alreadyPaid)
+          const remaining = Math.max(0, totalAmount + lateFee - alreadyPaid)
           const typed = parseFloat(payAmount) || 0
           const afterPayment = Math.max(0, remaining - typed)
           return (
@@ -785,11 +803,17 @@ export default function Loans() {
                   onValueChange={v => setPayAmount(v)}
                   placeholder="0,00"
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white" />
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   <button type="button" onClick={() => setPayAmount(remaining.toFixed(2))}
                     className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100">
                     Pagar tudo ({fmt(remaining)})
                   </button>
+                  {interestAmount > 0 && (
+                    <button type="button" onClick={() => setPayAmount((interestAmount + lateFee).toFixed(2))}
+                      className="text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded hover:bg-amber-100">
+                      Só juros{lateFee > 0 ? ' + mora' : ''} ({fmt(interestAmount + lateFee)})
+                    </button>
+                  )}
                   <button type="button" onClick={() => setPayAmount((remaining / 2).toFixed(2))}
                     className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-200">
                     Metade

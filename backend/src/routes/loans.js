@@ -84,19 +84,19 @@ function generateInstallments(loan) {
   return rows
 }
 
-// Calcula mora acumulada de uma parcela vencida
+// Calcula mora acumulada (% por dia de atraso sobre o valor da parcela)
 function calcLateFee(inst, loan) {
   const rate = parseFloat(loan.late_fee_rate) / 100
   if (rate <= 0 || inst.paid) return 0
-  const dueDate = new Date(inst.due_date)
+  const dueStr = inst.due_date instanceof Date
+    ? inst.due_date.toISOString().split('T')[0]
+    : String(inst.due_date).substring(0, 10)
+  const dueDate = new Date(dueStr + 'T12:00:00')
   const today = new Date()
   if (today <= dueDate) return 0
-  const diffMs = today - dueDate
-  let periods = 1
-  if (loan.frequency === 'daily') periods = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  else if (loan.frequency === 'weekly') periods = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7))
-  else periods = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30))
-  return parseFloat((parseFloat(inst.total_amount) * rate * Math.max(1, periods)).toFixed(2))
+  const days = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24))
+  if (days <= 0) return 0
+  return parseFloat((parseFloat(inst.total_amount) * rate * days).toFixed(2))
 }
 
 const createLoanSchema = {
@@ -310,7 +310,7 @@ export default async function loansRoutes(app) {
       contact_id, contact_name, contact_phone, notes,
       auto_notify, notify_days_before, status, custom_message,
       principal_amount, interest_rate, interest_type, frequency,
-      installments, start_date, first_due_date
+      installments, start_date, first_due_date, late_fee_rate
     } = request.body
 
     const curRes = await query('SELECT * FROM loans WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, userId])
@@ -356,8 +356,9 @@ export default async function loansRoutes(app) {
         frequency = COALESCE($12, frequency),
         installments = COALESCE($13, installments),
         start_date = COALESCE($14, start_date),
-        first_due_date = COALESCE($15, first_due_date)
-      WHERE id = $16 AND user_id = $17 AND deleted_at IS NULL
+        first_due_date = COALESCE($15, first_due_date),
+        late_fee_rate = COALESCE($16, late_fee_rate)
+      WHERE id = $17 AND user_id = $18 AND deleted_at IS NULL
       RETURNING *
     `, [
       contact_id ?? null,
@@ -372,6 +373,7 @@ export default async function loansRoutes(app) {
       installments ?? null,
       start_date ?? null,
       first_due_date ?? null,
+      late_fee_rate ?? null,
       id, userId
     ])
 
@@ -569,17 +571,14 @@ export default async function loansRoutes(app) {
     `, [id, today])
 
     for (const inst of overdueRes.rows) {
-      const dueDate = new Date(inst.due_date)
-      const todayDate = new Date(today)
-      const diffMs = todayDate - dueDate
-      let periods = 1
-
-      if (loan.frequency === 'daily') periods = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-      else if (loan.frequency === 'weekly') periods = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7))
-      else periods = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30))
-
-      periods = Math.max(1, periods)
-      const lateFee = parseFloat(inst.total_amount) * rate * periods
+      const dueStr = inst.due_date instanceof Date
+        ? inst.due_date.toISOString().split('T')[0]
+        : String(inst.due_date).substring(0, 10)
+      const dueDate = new Date(dueStr + 'T12:00:00')
+      const todayDate = new Date(today + 'T12:00:00')
+      const days = Math.floor((todayDate - dueDate) / (1000 * 60 * 60 * 24))
+      if (days <= 0) continue
+      const lateFee = parseFloat(inst.total_amount) * rate * days
 
       await query(`
         UPDATE loan_installments SET late_fee_amount = $1 WHERE id = $2
