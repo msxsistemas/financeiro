@@ -31,6 +31,40 @@ const shiftPeriod = (p, delta) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+function PeriodSelect({ period, setPeriod, compact = false }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="inline-flex rounded-lg border dark:border-gray-600 overflow-hidden">
+        <button onClick={() => setPeriod(currentPeriod())}
+          className={`px-3 py-1.5 text-sm ${!isYear(period) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>Mês</button>
+        <button onClick={() => setPeriod(currentYear())}
+          className={`px-3 py-1.5 text-sm ${isYear(period) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>Ano</button>
+      </div>
+      <button onClick={() => setPeriod(shiftPeriod(period, -1))}
+        className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+        title={isYear(period) ? 'Ano anterior' : 'Mês anterior'}>◀</button>
+      <select value={period} onChange={e => setPeriod(e.target.value)}
+        className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-1.5 text-sm">
+        {isYear(period)
+          ? Array.from({ length: 8 }, (_, i) => String(parseInt(currentYear()) + 2 - i)).map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))
+          : Array.from({ length: 24 }, (_, i) => shiftPeriod(currentPeriod(), 6 - i)).map(p => (
+              <option key={p} value={p}>{periodLabel(p)}</option>
+            ))
+        }
+      </select>
+      <button onClick={() => setPeriod(shiftPeriod(period, 1))}
+        className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+        title={isYear(period) ? 'Próximo ano' : 'Próximo mês'}>▶</button>
+      {!compact && (isYear(period) ? period !== currentYear() : period !== currentPeriod()) && (
+        <button onClick={() => setPeriod(isYear(period) ? currentYear() : currentPeriod())}
+          className="text-xs text-indigo-600 hover:text-indigo-800 ml-1">Hoje</button>
+      )}
+    </div>
+  )
+}
+
 export default function IPTV() {
   const { subtab } = useParams()
   const navigate = useNavigate()
@@ -221,37 +255,7 @@ export default function IPTV() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IPTV</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Servidores, revendas e clientes · {periodLabel(period)}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Toggle Mês / Ano */}
-          <div className="inline-flex rounded-lg border dark:border-gray-600 overflow-hidden">
-            <button onClick={() => setPeriod(currentPeriod())}
-              className={`px-3 py-1.5 text-sm ${!isYear(period) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>Mês</button>
-            <button onClick={() => setPeriod(currentYear())}
-              className={`px-3 py-1.5 text-sm ${isYear(period) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>Ano</button>
-          </div>
-          <button onClick={() => setPeriod(shiftPeriod(period, -1))}
-            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-            title={isYear(period) ? 'Ano anterior' : 'Mês anterior'}>◀</button>
-          <select value={period} onChange={e => setPeriod(e.target.value)}
-            className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-1.5 text-sm">
-            {isYear(period)
-              ? Array.from({ length: 8 }, (_, i) => String(parseInt(currentYear()) + 2 - i)).map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))
-              : Array.from({ length: 24 }, (_, i) => shiftPeriod(currentPeriod(), 6 - i)).map(p => (
-                  <option key={p} value={p}>{periodLabel(p)}</option>
-                ))
-            }
-          </select>
-          <button onClick={() => setPeriod(shiftPeriod(period, 1))}
-            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-            title={isYear(period) ? 'Próximo ano' : 'Próximo mês'}>▶</button>
-          {(isYear(period) ? period !== currentYear() : period !== currentPeriod()) && (
-            <button onClick={() => setPeriod(isYear(period) ? currentYear() : currentPeriod())}
-              className="text-xs text-indigo-600 hover:text-indigo-800 ml-1">Hoje</button>
-          )}
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{periodLabel(period)}</p>
         </div>
       </div>
 
@@ -330,7 +334,8 @@ export default function IPTV() {
       {/* ══════ TAB: SERVIDORES & APPS ══════ */}
       {tab === 'servers' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center gap-3 flex-wrap">
+            <PeriodSelect period={period} setPeriod={setPeriod} />
             <button onClick={openNewServer} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Servidor</button>
           </div>
           {servers.length === 0 ? (
@@ -374,11 +379,14 @@ export default function IPTV() {
       {tab === 'resellers' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center gap-3 flex-wrap">
-            <select value={filterServer} onChange={e => setFilterServer(e.target.value)}
-              className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
-              <option value="">Todos os servidores</option>
-              {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={filterServer} onChange={e => setFilterServer(e.target.value)}
+                className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
+                <option value="">Todos os servidores</option>
+                {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <PeriodSelect period={period} setPeriod={setPeriod} />
+            </div>
             <div className="flex gap-2">
               {resellers.length === 0 && !isYear(period) && (
                 <button onClick={() => duplicatePrevMonth('resellers')}
@@ -389,6 +397,46 @@ export default function IPTV() {
               <button onClick={openNewReseller} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Revendedor</button>
             </div>
           </div>
+
+          {/* Top 5 revendedores que mais compraram no período */}
+          {filteredResellers.length > 0 && (() => {
+            const top = [...filteredResellers]
+              .sort((a, b) => parseFloat(b.total_revenue || 0) - parseFloat(a.total_revenue || 0))
+              .slice(0, 5)
+            const max = parseFloat(top[0]?.total_revenue || 0) || 1
+            const medals = ['🥇', '🥈', '🥉', '4º', '5º']
+            return (
+              <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-gray-800 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 dark:text-white">🏆 Top 5 em {periodLabel(period)}</h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{filteredResellers.length} revendedor(es){filterServer ? ' filtrados' : ''}</span>
+                </div>
+                <div className="space-y-2">
+                  {top.map((r, i) => {
+                    const rev = parseFloat(r.total_revenue || 0)
+                    const pct = (rev / max) * 100
+                    return (
+                      <div key={r.id} className="flex items-center gap-3">
+                        <span className="w-8 text-sm text-center font-semibold text-gray-600 dark:text-gray-300">{medals[i]}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-medium text-gray-800 dark:text-white truncate">{r.name}</span>
+                            <span className="text-sm font-bold text-green-600 shrink-0">{fmt(rev)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                              <div className="bg-indigo-500 h-full" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-400 shrink-0">{r.credit_quantity} cred.</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
           {filteredResellers.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
               <p className="text-4xl mb-3">🏪</p>
@@ -434,11 +482,14 @@ export default function IPTV() {
       {tab === 'my-clients' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center gap-3 flex-wrap">
-            <select value={filterServer} onChange={e => setFilterServer(e.target.value)}
-              className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
-              <option value="">Todos os servidores</option>
-              {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={filterServer} onChange={e => setFilterServer(e.target.value)}
+                className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
+                <option value="">Todos os servidores</option>
+                {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <PeriodSelect period={period} setPeriod={setPeriod} />
+            </div>
             <div className="flex gap-2">
               {myClients.length === 0 && !isYear(period) && (
                 <button onClick={() => duplicatePrevMonth('my-clients')}
