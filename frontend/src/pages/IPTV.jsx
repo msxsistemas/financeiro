@@ -37,7 +37,7 @@ export default function IPTV() {
   // Forms
   const [serverForm, setServerForm] = useState({ name: '', credit_value: '' })
   const [resellerForm, setResellerForm] = useState({ server_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' })
-  const [clientForm, setClientForm] = useState({ server_id: '', credit_quantity: '1', notes: '' })
+  const [clientForm, setClientForm] = useState({ server_id: '', credit_quantity: '1', sell_value: '', notes: '' })
 
   // Filtros
   const [filterServer, setFilterServer] = useState('')
@@ -87,8 +87,8 @@ export default function IPTV() {
   }
 
   // ── My Client CRUD
-  const openNewClient = () => { setEditItem(null); setClientForm({ server_id: '', credit_quantity: '1', notes: '' }); setClientModal(true) }
-  const openEditClient = c => { setEditItem(c); setClientForm({ server_id: String(c.server_id || ''), credit_quantity: String(c.credit_quantity || 1), notes: c.notes || '' }); setClientModal(true) }
+  const openNewClient = () => { setEditItem(null); setClientForm({ server_id: '', credit_quantity: '1', sell_value: '', notes: '' }); setClientModal(true) }
+  const openEditClient = c => { setEditItem(c); setClientForm({ server_id: String(c.server_id || ''), credit_quantity: String(c.credit_quantity || 1), sell_value: c.sell_value != null ? String(parseFloat(c.sell_value)) : '', notes: c.notes || '' }); setClientModal(true) }
   const saveClient = async () => {
     if (!clientForm.server_id) return toast.error('Selecione um servidor')
     setSaving(true)
@@ -98,7 +98,7 @@ export default function IPTV() {
         server_id: clientForm.server_id,
         name: srv?.name || 'Servidor',
         credit_quantity: parseInt(clientForm.credit_quantity) || 1,
-        sell_value: 0,
+        sell_value: parseFloat(clientForm.sell_value) || 0,
         notes: clientForm.notes || null
       }
       if (editItem) await api.put(`/api/iptv/my-clients/${editItem.id}`, p)
@@ -389,11 +389,32 @@ export default function IPTV() {
               {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade de clientes</label>
-            <NumberStepper value={clientForm.credit_quantity} min={0} max={99999}
-              onChange={v => setClientForm(p => ({ ...p, credit_quantity: v }))} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Qtd. de clientes</label>
+              <NumberStepper value={clientForm.credit_quantity} min={0} max={99999}
+                onChange={v => setClientForm(p => ({ ...p, credit_quantity: v }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor mensal/cliente</label>
+              <MaskedInput mask="currency" value={clientForm.sell_value}
+                onValueChange={v => setClientForm(p => ({ ...p, sell_value: v }))}
+                className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="0,00" />
+            </div>
           </div>
+          {clientForm.credit_quantity > 0 && clientForm.sell_value > 0 && clientForm.server_id && (() => {
+            const sv = servers.find(s => String(s.id) === clientForm.server_id)
+            if (!sv) return null
+            const qtd = parseInt(clientForm.credit_quantity) || 0
+            const val = parseFloat(clientForm.sell_value) || 0
+            const rev = qtd * val
+            const cost = qtd * (parseFloat(sv.credit_value) || 0)
+            return (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
+                Receita: <strong>{fmt(rev)}</strong> | Custo: <strong className="text-red-500">{fmt(cost)}</strong> | Lucro: <strong>{fmt(rev - cost)}</strong>
+              </div>
+            )
+          })()}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
             <textarea value={clientForm.notes} onChange={e => setClientForm(p => ({ ...p, notes: e.target.value }))} rows={2}

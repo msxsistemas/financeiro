@@ -58,8 +58,8 @@ export default async function iptvRoutes(app) {
       SELECT s.*,
         COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS credits_sold,
         COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS reseller_revenue,
-        COALESCE((SELECT COUNT(*) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_count,
-        COALESCE((SELECT SUM(mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
+        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_count,
+        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
     `, [req.user.id])
     return res.rows.map(s => ({
@@ -325,8 +325,8 @@ export default async function iptvRoutes(app) {
       SELECT s.*,
         COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS credits_sold,
         COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS reseller_revenue,
-        COALESCE((SELECT COUNT(*) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_count,
-        COALESCE((SELECT SUM(mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
+        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_count,
+        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
     `, [uid])
 

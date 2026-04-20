@@ -45,10 +45,10 @@ function generateInstallments(loan) {
       })
     }
   } else {
-    // Juros simples: cada parcela = (principal / n) + (principal * rate)
-    // Juros incidem sobre o valor original a cada período
+    // Juros simples (SAC): amortização constante, juros sobre o saldo devedor
+    // Parcela k: principal = P/n, juros = saldo_antes × i
     const installmentPrincipal = principal / n
-    const interestAmount = rate > 0 ? principal * rate : 0
+    let balance = principal
 
     for (let i = 1; i <= n; i++) {
       let dueDate = new Date(firstDueDateStr + 'T12:00:00')
@@ -56,14 +56,19 @@ function generateInstallments(loan) {
       else if (frequency === 'weekly') dueDate.setDate(dueDate.getDate() + (i - 1) * 7)
       else dueDate.setMonth(dueDate.getMonth() + (i - 1))
 
+      const interestAmount = rate > 0 ? balance * rate : 0
+      // Última parcela absorve o resíduo de arredondamento do principal
+      const principalThis = i === n ? balance : installmentPrincipal
+      balance -= principalThis
+
       rows.push({
         loan_id: id,
         installment_number: i,
         due_date: dueDate.toISOString().split('T')[0],
-        principal_amount: parseFloat(installmentPrincipal.toFixed(2)),
+        principal_amount: parseFloat(principalThis.toFixed(2)),
         interest_amount: parseFloat(interestAmount.toFixed(2)),
         late_fee_amount: 0,
-        total_amount: parseFloat((installmentPrincipal + interestAmount).toFixed(2)),
+        total_amount: parseFloat((principalThis + interestAmount).toFixed(2)),
         user_id
       })
     }
@@ -215,7 +220,24 @@ export default async function loansRoutes(app) {
       return inst
     }))
 
-    return { ...loan, installments_list: updatedInstallments }
+    const amount_remaining = updatedInstallments.reduce((s, i) => {
+      if (i.paid) return s
+      const total = parseFloat(i.total_amount) + parseFloat(i.late_fee_amount || 0)
+      const paid = parseFloat(i.paid_amount || 0)
+      return s + Math.max(0, total - paid)
+    }, 0)
+    const amount_paid = updatedInstallments.reduce((s, i) => s + parseFloat(i.paid_amount || 0), 0)
+    const installments_paid = updatedInstallments.filter(i => i.paid).length
+    const installments_total = updatedInstallments.length
+
+    return {
+      ...loan,
+      amount_remaining,
+      amount_paid,
+      installments_paid,
+      installments_total,
+      installments_list: updatedInstallments
+    }
   })
 
   // Criar empréstimo
