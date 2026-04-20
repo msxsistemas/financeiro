@@ -9,6 +9,22 @@ import NumberStepper from '../components/NumberStepper'
 
 const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
 
+const currentPeriod = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const periodLabel = p => {
+  if (!p) return ''
+  const [y, m] = p.split('-')
+  return `${MESES[parseInt(m) - 1]}/${y}`
+}
+const shiftPeriod = (p, delta) => {
+  const [y, m] = p.split('-').map(Number)
+  const d = new Date(y, m - 1 + delta, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 export default function IPTV() {
   const { subtab } = useParams()
   const navigate = useNavigate()
@@ -23,8 +39,12 @@ export default function IPTV() {
   const [servers, setServers] = useState([])
   const [resellers, setResellers] = useState([])
   const [myClients, setMyClients] = useState([])
+  const [contacts, setContacts] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState(currentPeriod())
+  const [contactSearch, setContactSearch] = useState('')
+  const [showContactList, setShowContactList] = useState(false)
 
   // Modais
   const [serverModal, setServerModal] = useState(false)
@@ -36,8 +56,8 @@ export default function IPTV() {
 
   // Forms
   const [serverForm, setServerForm] = useState({ name: '', credit_value: '' })
-  const [resellerForm, setResellerForm] = useState({ server_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' })
-  const [clientForm, setClientForm] = useState({ server_id: '', credit_quantity: '1', sell_value: '', notes: '' })
+  const [resellerForm, setResellerForm] = useState({ server_id: '', contact_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' })
+  const [clientForm, setClientForm] = useState({ server_id: '', contact_id: '', name: '', phone: '', credit_quantity: '1', sell_value: '', notes: '' })
 
   // Filtros
   const [filterServer, setFilterServer] = useState('')
@@ -45,16 +65,34 @@ export default function IPTV() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
+      const q = `?period=${period}`
       const [srv, res, mc, st] = await Promise.all([
-        api.get('/api/iptv/servers'), api.get('/api/iptv/resellers'),
-        api.get('/api/iptv/my-clients'), api.get('/api/iptv/stats')
+        api.get(`/api/iptv/servers${q}`), api.get(`/api/iptv/resellers${q}`),
+        api.get(`/api/iptv/my-clients${q}`), api.get(`/api/iptv/stats${q}`)
       ])
       setServers(srv.data); setResellers(res.data); setMyClients(mc.data); setStats(st.data)
     } catch { toast.error('Erro ao carregar dados') }
     finally { setLoading(false) }
-  }, [])
+  }, [period])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    api.get('/api/contacts?limit=300').then(r => setContacts(r.data.data || [])).catch(() => {})
+  }, [])
+
+  const filteredContacts = contacts.filter(c =>
+    c.name?.toLowerCase().includes(contactSearch.toLowerCase()) ||
+    c.phone?.includes(contactSearch)
+  ).slice(0, 8)
+
+  const duplicatePrevMonth = async (kind) => {
+    try {
+      const from = shiftPeriod(period, -1)
+      const { data } = await api.post(`/api/iptv/${kind}/duplicate`, { from_period: from, to_period: period })
+      toast.success(`${data.inserted} linha(s) copiadas de ${periodLabel(from)}`)
+      load()
+    } catch (e) { toast.error(e.response?.data?.error || 'Erro ao duplicar') }
+  }
 
   // ── Server CRUD
   const openNewServer = () => { setEditItem(null); setServerForm({ name: '', credit_value: '' }); setServerModal(true) }
@@ -72,37 +110,85 @@ export default function IPTV() {
   }
 
   // ── Reseller CRUD
-  const openNewReseller = () => { setEditItem(null); setResellerForm({ server_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' }); setResellerModal(true) }
-  const openEditReseller = r => { setEditItem(r); setResellerForm({ server_id: String(r.server_id || ''), name: r.name, phone: r.phone || '', credit_quantity: r.credit_quantity || '', credit_sell_value: r.credit_sell_value || '', notes: r.notes || '' }); setResellerModal(true) }
+  const openNewReseller = () => {
+    setEditItem(null)
+    setResellerForm({ server_id: '', contact_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' })
+    setContactSearch('')
+    setResellerModal(true)
+  }
+  const openEditReseller = r => {
+    setEditItem(r)
+    setResellerForm({
+      server_id: String(r.server_id || ''),
+      contact_id: '', // agenda não é linkada explicitamente, match é por nome
+      name: r.name, phone: r.phone || '',
+      credit_quantity: r.credit_quantity || '',
+      credit_sell_value: r.credit_sell_value || '',
+      notes: r.notes || ''
+    })
+    setContactSearch(r.name || '')
+    setResellerModal(true)
+  }
   const saveReseller = async () => {
-    if (!resellerForm.name || !resellerForm.server_id) return toast.error('Nome e servidor obrigatorios')
+    const name = (resellerForm.name || contactSearch || '').trim()
+    if (!name || !resellerForm.server_id) return toast.error('Nome e servidor obrigatórios')
     setSaving(true)
     try {
-      const p = { ...resellerForm, credit_quantity: parseInt(resellerForm.credit_quantity) || 0, credit_sell_value: parseFloat(resellerForm.credit_sell_value) || 0 }
+      const p = {
+        server_id: resellerForm.server_id,
+        name,
+        phone: resellerForm.phone || null,
+        credit_quantity: parseInt(resellerForm.credit_quantity) || 0,
+        credit_sell_value: parseFloat(resellerForm.credit_sell_value) || 0,
+        notes: resellerForm.notes || null,
+        period
+      }
       if (editItem) await api.put(`/api/iptv/resellers/${editItem.id}`, p)
       else await api.post('/api/iptv/resellers', p)
+      // Atualiza cache de contatos (backend já criou se era novo)
+      api.get('/api/contacts?limit=300').then(r => setContacts(r.data.data || [])).catch(() => {})
       toast.success('Salvo!'); setResellerModal(false); load()
     } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
     finally { setSaving(false) }
   }
 
   // ── My Client CRUD
-  const openNewClient = () => { setEditItem(null); setClientForm({ server_id: '', credit_quantity: '1', sell_value: '', notes: '' }); setClientModal(true) }
-  const openEditClient = c => { setEditItem(c); setClientForm({ server_id: String(c.server_id || ''), credit_quantity: String(c.credit_quantity || 1), sell_value: c.sell_value != null ? String(parseFloat(c.sell_value)) : '', notes: c.notes || '' }); setClientModal(true) }
+  const openNewClient = () => {
+    setEditItem(null)
+    setClientForm({ server_id: '', contact_id: '', name: '', phone: '', credit_quantity: '1', sell_value: '', notes: '' })
+    setContactSearch('')
+    setClientModal(true)
+  }
+  const openEditClient = c => {
+    setEditItem(c)
+    setClientForm({
+      server_id: String(c.server_id || ''),
+      contact_id: '',
+      name: c.name || '', phone: c.phone || '',
+      credit_quantity: String(c.credit_quantity || 1),
+      sell_value: c.sell_value != null ? String(parseFloat(c.sell_value)) : '',
+      notes: c.notes || ''
+    })
+    setContactSearch(c.name || '')
+    setClientModal(true)
+  }
   const saveClient = async () => {
-    if (!clientForm.server_id) return toast.error('Selecione um servidor')
+    const name = (clientForm.name || contactSearch || '').trim()
+    if (!name || !clientForm.server_id) return toast.error('Nome e servidor obrigatórios')
     setSaving(true)
     try {
-      const srv = servers.find(s => String(s.id) === String(clientForm.server_id))
       const p = {
         server_id: clientForm.server_id,
-        name: srv?.name || 'Servidor',
+        name,
+        phone: clientForm.phone || null,
         credit_quantity: parseInt(clientForm.credit_quantity) || 1,
         sell_value: parseFloat(clientForm.sell_value) || 0,
-        notes: clientForm.notes || null
+        notes: clientForm.notes || null,
+        period
       }
       if (editItem) await api.put(`/api/iptv/my-clients/${editItem.id}`, p)
       else await api.post('/api/iptv/my-clients', p)
+      api.get('/api/contacts?limit=300').then(r => setContacts(r.data.data || [])).catch(() => {})
       toast.success('Salvo!'); setClientModal(false); load()
     } catch (e) { toast.error(e.response?.data?.error || 'Erro') }
     finally { setSaving(false) }
@@ -128,7 +214,23 @@ export default function IPTV() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IPTV</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Servidores, revendas e clientes</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Servidores, revendas e clientes · {periodLabel(period)}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPeriod(shiftPeriod(period, -1))}
+            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700" title="Mês anterior">◀</button>
+          <select value={period} onChange={e => setPeriod(e.target.value)}
+            className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-1.5 text-sm">
+            {Array.from({ length: 24 }, (_, i) => shiftPeriod(currentPeriod(), 6 - i)).map(p => (
+              <option key={p} value={p}>{periodLabel(p)}</option>
+            ))}
+          </select>
+          <button onClick={() => setPeriod(shiftPeriod(period, 1))}
+            className="border dark:border-gray-600 dark:text-gray-300 rounded-lg px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700" title="Próximo mês">▶</button>
+          {period !== currentPeriod() && (
+            <button onClick={() => setPeriod(currentPeriod())}
+              className="text-xs text-indigo-600 hover:text-indigo-800 ml-1">Hoje</button>
+          )}
         </div>
       </div>
 
@@ -256,7 +358,15 @@ export default function IPTV() {
               <option value="">Todos os servidores</option>
               {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <button onClick={openNewReseller} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Revendedor</button>
+            <div className="flex gap-2">
+              {resellers.length === 0 && (
+                <button onClick={() => duplicatePrevMonth('resellers')}
+                  className="border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 px-3 py-2 rounded-lg text-sm">
+                  📋 Copiar {periodLabel(shiftPeriod(period, -1))}
+                </button>
+              )}
+              <button onClick={openNewReseller} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Revendedor</button>
+            </div>
           </div>
           {filteredResellers.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
@@ -308,7 +418,15 @@ export default function IPTV() {
               <option value="">Todos os servidores</option>
               {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <button onClick={openNewClient} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Servidor</button>
+            <div className="flex gap-2">
+              {myClients.length === 0 && (
+                <button onClick={() => duplicatePrevMonth('my-clients')}
+                  className="border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 px-3 py-2 rounded-lg text-sm">
+                  📋 Copiar {periodLabel(shiftPeriod(period, -1))}
+                </button>
+              )}
+              <button onClick={openNewClient} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Cliente</button>
+            </div>
           </div>
           {filteredClients.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
@@ -317,11 +435,12 @@ export default function IPTV() {
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
-              <table className="w-full text-sm min-w-[700px]">
+              <table className="w-full text-sm min-w-[800px]">
                 <thead>
                   <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Cliente</th>
                     <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Servidor</th>
-                    <th className="text-center px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Clientes</th>
+                    <th className="text-center px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Qtd</th>
                     <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Valor/cliente</th>
                     <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Receita</th>
                     <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Lucro</th>
@@ -331,14 +450,18 @@ export default function IPTV() {
                 <tbody>
                   {filteredClients.map(c => (
                     <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-4 py-3 font-medium text-gray-800 dark:text-white">{c.server_name || '—'}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-800 dark:text-white">{c.name || '—'}</p>
+                        {c.phone && <p className="text-xs text-gray-400">{c.phone}</p>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.server_name || '—'}</td>
                       <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400">{c.credit_quantity || 0}</td>
                       <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{fmt(c.sell_value)}</td>
                       <td className="px-4 py-3 text-right font-medium text-green-600">{fmt(c.total_revenue)}</td>
                       <td className={`px-4 py-3 text-right font-bold ${c.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(c.profit)}</td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => openEditClient(c)} className="text-indigo-500 hover:text-indigo-700 mr-2 text-xs">✏️</button>
-                        <button onClick={() => setConfirmDelete({ type: 'my-clients', id: c.id, name: c.server_name || 'servidor' })} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
+                        <button onClick={() => setConfirmDelete({ type: 'my-clients', id: c.id, name: c.name || 'cliente' })} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
                       </td>
                     </tr>
                   ))}
@@ -399,15 +522,47 @@ export default function IPTV() {
               {servers.map(s => <option key={s.id} value={s.id}>{s.name} ({fmt(s.credit_value)}/cred)</option>)}
             </select>
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome *</label>
-            <input value={resellerForm.name} onChange={e => setResellerForm(p => ({ ...p, name: e.target.value }))}
-              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="Nome do revendedor" />
+            <div className="relative">
+              <input
+                value={resellerForm.name || contactSearch}
+                onChange={e => {
+                  const v = e.target.value
+                  setContactSearch(v)
+                  setResellerForm(p => ({ ...p, name: v }))
+                  setShowContactList(true)
+                }}
+                onFocus={() => setShowContactList(true)}
+                placeholder="Digite — será buscado na agenda"
+                className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm pr-8" />
+              {resellerForm.name && (
+                <button type="button"
+                  onClick={() => { setResellerForm(p => ({ ...p, name: '', phone: '' })); setContactSearch(''); setShowContactList(false) }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xs">✕</button>
+              )}
+            </div>
+            {showContactList && contactSearch.length > 0 && filteredContacts.length > 0 && (
+              <div className="absolute z-20 left-0 right-0 mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                {filteredContacts.map(c => (
+                  <button type="button" key={c.id}
+                    onClick={() => {
+                      setResellerForm(p => ({ ...p, name: c.name, phone: c.phone || '' }))
+                      setContactSearch(c.name); setShowContactList(false)
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm flex items-center justify-between">
+                    <span className="font-medium dark:text-white">{c.name}</span>
+                    {c.phone && <span className="text-gray-400 text-xs">{c.phone}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">WhatsApp</label>
             <MaskedInput mask="phone" value={resellerForm.phone} onValueChange={v => setResellerForm(p => ({ ...p, phone: v }))}
               className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="(11) 99999-9999" />
+            <p className="text-xs text-gray-400 mt-1">Se o nome não existir na agenda, um novo contato é criado.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -439,8 +594,8 @@ export default function IPTV() {
         </div>
       </Modal>
 
-      {/* Meu Servidor */}
-      <Modal open={clientModal} onClose={() => setClientModal(false)} title={editItem ? 'Editar servidor' : 'Novo servidor'} size="sm">
+      {/* Cliente direto (Meus Servidores) */}
+      <Modal open={clientModal} onClose={() => setClientModal(false)} title={editItem ? 'Editar cliente' : 'Novo cliente'} size="sm">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servidor *</label>
@@ -449,6 +604,47 @@ export default function IPTV() {
               <option value="">Selecione</option>
               {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
+          </div>
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome *</label>
+            <div className="relative">
+              <input
+                value={clientForm.name || contactSearch}
+                onChange={e => {
+                  const v = e.target.value
+                  setContactSearch(v)
+                  setClientForm(p => ({ ...p, name: v }))
+                  setShowContactList(true)
+                }}
+                onFocus={() => setShowContactList(true)}
+                placeholder="Digite — será buscado na agenda"
+                className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm pr-8" />
+              {clientForm.name && (
+                <button type="button"
+                  onClick={() => { setClientForm(p => ({ ...p, name: '', phone: '' })); setContactSearch(''); setShowContactList(false) }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xs">✕</button>
+              )}
+            </div>
+            {showContactList && contactSearch.length > 0 && filteredContacts.length > 0 && (
+              <div className="absolute z-20 left-0 right-0 mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                {filteredContacts.map(c => (
+                  <button type="button" key={c.id}
+                    onClick={() => {
+                      setClientForm(p => ({ ...p, name: c.name, phone: c.phone || '' }))
+                      setContactSearch(c.name); setShowContactList(false)
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm flex items-center justify-between">
+                    <span className="font-medium dark:text-white">{c.name}</span>
+                    {c.phone && <span className="text-gray-400 text-xs">{c.phone}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">WhatsApp</label>
+            <MaskedInput mask="phone" value={clientForm.phone} onValueChange={v => setClientForm(p => ({ ...p, phone: v }))}
+              className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="(11) 99999-9999" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

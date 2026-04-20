@@ -56,21 +56,49 @@ export default async function iptvRoutes(app) {
     await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS credit_quantity INTEGER DEFAULT 0`).catch(() => {})
     await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS credit_sell_value NUMERIC(10,2) DEFAULT 0`).catch(() => {})
     await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS notes TEXT`).catch(() => {})
+    await query(`ALTER TABLE iptv_resellers ADD COLUMN IF NOT EXISTS period VARCHAR(7)`).catch(() => {})
+    await query(`ALTER TABLE iptv_my_clients ADD COLUMN IF NOT EXISTS period VARCHAR(7)`).catch(() => {})
   })
+
+  // Utilitário: garante contato (cria novo se não existir)
+  async function ensureContact(userId, name, phone) {
+    if (!name || !name.trim()) return null
+    const nameLower = name.trim().toLowerCase()
+    const existing = await query(
+      `SELECT id FROM contacts WHERE user_id = $1 AND LOWER(TRIM(name)) = $2 AND deleted_at IS NULL LIMIT 1`,
+      [userId, nameLower]
+    )
+    if (existing.rows[0]) return existing.rows[0].id
+    try {
+      const created = await query(
+        `INSERT INTO contacts (user_id, name, phone, type) VALUES ($1, $2, $3, 'client') RETURNING id`,
+        [userId, name.trim(), phone || null]
+      )
+      return created.rows[0].id
+    } catch {
+      return null
+    }
+  }
+
+  function currentPeriod() {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  }
 
   // ══════════════════════════════════════════════════════════════
   // SERVIDORES & APPS
   // ══════════════════════════════════════════════════════════════
 
   app.get('/servers', { preHandler: [app.authenticate] }, async (req) => {
+    const period = req.query.period || currentPeriod()
     const res = await query(`
       SELECT s.*,
-        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS credits_sold,
-        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS reseller_revenue,
-        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_count,
-        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
+        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS credits_sold,
+        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS reseller_revenue,
+        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_count,
+        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
-    `, [req.user.id])
+    `, [req.user.id, period])
     return res.rows.map(s => {
       const creditValue = parseFloat(s.credit_value)
       const creditsSold = parseInt(s.credits_sold)
@@ -126,39 +154,48 @@ export default async function iptvRoutes(app) {
   // ══════════════════════════════════════════════════════════════
 
   app.get('/resellers', { preHandler: [app.authenticate] }, async (req) => {
-    const { server_id } = req.query
-    let where = 'r.user_id = $1'
-    const params = [req.user.id]
+    const { server_id, period } = req.query
+    const filterPeriod = period || currentPeriod()
+    let where = 'r.user_id = $1 AND r.period = $2'
+    const params = [req.user.id, filterPeriod]
     if (server_id) { params.push(server_id); where += ` AND r.server_id = $${params.length}` }
     const res = await query(`
       SELECT r.*, s.name AS server_name, s.credit_value AS server_credit_value
       FROM iptv_resellers r LEFT JOIN iptv_servers s ON s.id = r.server_id
       WHERE ${where} ORDER BY r.name
     `, params)
-    return res.rows.map(r => ({
-      ...r,
-      credit_quantity: parseInt(r.credit_quantity),
-      credit_sell_value: parseFloat(r.credit_sell_value),
-      server_credit_value: parseFloat(r.server_credit_value || 0),
-      total_revenue: parseInt(r.credit_quantity) * parseFloat(r.credit_sell_value),
-      total_cost: parseInt(r.credit_quantity) * parseFloat(r.server_credit_value || 0),
-      profit: (parseInt(r.credit_quantity) * parseFloat(r.credit_sell_value)) - (parseInt(r.credit_quantity) * parseFloat(r.server_credit_value || 0))
-    }))
+    return res.rows.map(r => {
+      const qty = parseInt(r.credit_quantity) || 0
+      const sell = parseFloat(r.credit_sell_value) || 0
+      const cost = parseFloat(r.server_credit_value) || 0
+      return {
+        ...r,
+        credit_quantity: qty,
+        credit_sell_value: sell,
+        server_credit_value: cost,
+        total_revenue: qty * sell,
+        total_cost: qty * cost,
+        profit: qty * (sell - cost)
+      }
+    })
   })
 
   app.post('/resellers', { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const { server_id, name, phone, credit_quantity, credit_sell_value, notes } = req.body
+      const { server_id, name, phone, credit_quantity, credit_sell_value, notes, period } = req.body
       const sid = parseInt(server_id)
       if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
 
       const srv = await query('SELECT id FROM iptv_servers WHERE id = $1 AND user_id = $2', [sid, req.user.id])
       if (!srv.rows[0]) return reply.code(400).send({ error: 'Servidor não encontrado' })
 
+      // Cria/reusa contato na agenda pelo nome
+      await ensureContact(req.user.id, name, phone)
+
       const res = await query(
-        `INSERT INTO iptv_resellers (user_id, server_id, name, phone, credit_quantity, credit_sell_value, notes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-        [req.user.id, sid, name, phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null]
+        `INSERT INTO iptv_resellers (user_id, server_id, name, phone, credit_quantity, credit_sell_value, notes, period)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+        [req.user.id, sid, name.trim(), phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null, period || currentPeriod()]
       )
       return reply.code(201).send(res.rows[0])
     } catch (err) {
@@ -173,16 +210,53 @@ export default async function iptvRoutes(app) {
       const sid = parseInt(server_id)
       if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
 
+      await ensureContact(req.user.id, name, phone)
+
       const res = await query(
         `UPDATE iptv_resellers SET server_id=$1, name=$2, phone=$3, credit_quantity=$4, credit_sell_value=$5, notes=$6, updated_at=NOW()
          WHERE id=$7 AND user_id=$8 RETURNING *`,
-        [sid, name, phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null, req.params.id, req.user.id]
+        [sid, name.trim(), phone || null, parseInt(credit_quantity) || 0, parseFloat(credit_sell_value) || 0, notes || null, req.params.id, req.user.id]
       )
       if (!res.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
       return res.rows[0]
     } catch (err) {
       req.log.error({ err: err.message }, 'PUT /resellers falhou')
       return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
+  })
+
+  // Duplicar revendedores de um mês para outro (ex: carregar mês anterior no atual)
+  app.post('/resellers/duplicate', { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
+      const { from_period, to_period } = req.body
+      const from = from_period
+      const to = to_period || currentPeriod()
+      if (!from) return reply.code(400).send({ error: 'from_period obrigatório' })
+
+      const rows = await query(
+        `SELECT server_id, name, phone, credit_quantity, credit_sell_value, notes
+         FROM iptv_resellers WHERE user_id = $1 AND period = $2`,
+        [req.user.id, from]
+      )
+      let inserted = 0
+      for (const r of rows.rows) {
+        // Evita duplicar se já tiver linha para o mesmo nome+server+período destino
+        const existing = await query(
+          `SELECT id FROM iptv_resellers WHERE user_id = $1 AND period = $2 AND server_id = $3 AND LOWER(name) = LOWER($4)`,
+          [req.user.id, to, r.server_id, r.name]
+        )
+        if (existing.rows[0]) continue
+        await query(
+          `INSERT INTO iptv_resellers (user_id, server_id, name, phone, credit_quantity, credit_sell_value, notes, period)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [req.user.id, r.server_id, r.name, r.phone, r.credit_quantity, r.credit_sell_value, r.notes, to]
+        )
+        inserted++
+      }
+      return { inserted, from, to }
+    } catch (err) {
+      req.log.error({ err: err.message }, 'POST /resellers/duplicate falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao duplicar' })
     }
   })
 
@@ -197,9 +271,10 @@ export default async function iptvRoutes(app) {
   // ══════════════════════════════════════════════════════════════
 
   app.get('/my-clients', { preHandler: [app.authenticate] }, async (req) => {
-    const { server_id } = req.query
-    let where = 'mc.user_id = $1'
-    const params = [req.user.id]
+    const { server_id, period } = req.query
+    const filterPeriod = period || currentPeriod()
+    let where = 'mc.user_id = $1 AND mc.period = $2'
+    const params = [req.user.id, filterPeriod]
     if (server_id) { params.push(server_id); where += ` AND mc.server_id = $${params.length}` }
     const res = await query(`
       SELECT mc.*, s.name AS server_name, s.credit_value AS server_credit_value
@@ -226,18 +301,19 @@ export default async function iptvRoutes(app) {
 
   app.post('/my-clients', { preHandler: [app.authenticate] }, async (req, reply) => {
     try {
-      const { server_id, name, phone, credit_quantity, sell_value, notes } = req.body
+      const { server_id, name, phone, credit_quantity, sell_value, notes, period } = req.body
       const sid = parseInt(server_id)
       if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
 
-      // Garante que o servidor existe e pertence ao usuário (evita FK error)
       const srv = await query('SELECT id FROM iptv_servers WHERE id = $1 AND user_id = $2', [sid, req.user.id])
       if (!srv.rows[0]) return reply.code(400).send({ error: 'Servidor não encontrado' })
 
+      await ensureContact(req.user.id, name, phone)
+
       const res = await query(
-        `INSERT INTO iptv_my_clients (user_id, server_id, name, phone, credit_quantity, sell_value, notes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-        [req.user.id, sid, name, phone || null, parseInt(credit_quantity) || 1, parseFloat(sell_value) || 0, notes || null]
+        `INSERT INTO iptv_my_clients (user_id, server_id, name, phone, credit_quantity, sell_value, notes, period)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+        [req.user.id, sid, name.trim(), phone || null, parseInt(credit_quantity) || 1, parseFloat(sell_value) || 0, notes || null, period || currentPeriod()]
       )
       return reply.code(201).send(res.rows[0])
     } catch (err) {
@@ -252,16 +328,51 @@ export default async function iptvRoutes(app) {
       const sid = parseInt(server_id)
       if (!name || !sid) return reply.code(400).send({ error: 'Nome e servidor são obrigatórios' })
 
+      await ensureContact(req.user.id, name, phone)
+
       const res = await query(
         `UPDATE iptv_my_clients SET server_id=$1, name=$2, phone=$3, credit_quantity=$4, sell_value=$5, status=$6, notes=$7, updated_at=NOW()
          WHERE id=$8 AND user_id=$9 RETURNING *`,
-        [sid, name, phone || null, parseInt(credit_quantity) || 1, parseFloat(sell_value) || 0, status || 'active', notes || null, req.params.id, req.user.id]
+        [sid, name.trim(), phone || null, parseInt(credit_quantity) || 1, parseFloat(sell_value) || 0, status || 'active', notes || null, req.params.id, req.user.id]
       )
       if (!res.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
       return res.rows[0]
     } catch (err) {
       req.log.error({ err: err.message }, 'PUT /my-clients falhou')
       return reply.code(500).send({ error: err.message || 'Erro ao salvar' })
+    }
+  })
+
+  app.post('/my-clients/duplicate', { preHandler: [app.authenticate] }, async (req, reply) => {
+    try {
+      const { from_period, to_period } = req.body
+      const from = from_period
+      const to = to_period || currentPeriod()
+      if (!from) return reply.code(400).send({ error: 'from_period obrigatório' })
+
+      const rows = await query(
+        `SELECT server_id, name, phone, credit_quantity, sell_value, status, notes
+         FROM iptv_my_clients WHERE user_id = $1 AND period = $2`,
+        [req.user.id, from]
+      )
+      let inserted = 0
+      for (const r of rows.rows) {
+        const existing = await query(
+          `SELECT id FROM iptv_my_clients WHERE user_id = $1 AND period = $2 AND server_id = $3 AND LOWER(name) = LOWER($4)`,
+          [req.user.id, to, r.server_id, r.name]
+        )
+        if (existing.rows[0]) continue
+        await query(
+          `INSERT INTO iptv_my_clients (user_id, server_id, name, phone, credit_quantity, sell_value, status, notes, period)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [req.user.id, r.server_id, r.name, r.phone, r.credit_quantity, r.sell_value, r.status || 'active', r.notes, to]
+        )
+        inserted++
+      }
+      return { inserted, from, to }
+    } catch (err) {
+      req.log.error({ err: err.message }, 'POST /my-clients/duplicate falhou')
+      return reply.code(500).send({ error: err.message || 'Erro ao duplicar' })
     }
   })
 
@@ -390,14 +501,15 @@ export default async function iptvRoutes(app) {
 
   app.get('/stats', { preHandler: [app.authenticate] }, async (req) => {
     const uid = req.user.id
+    const period = req.query.period || currentPeriod()
     const serversRes = await query(`
       SELECT s.*,
-        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS credits_sold,
-        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id), 0) AS reseller_revenue,
-        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_count,
-        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
+        COALESCE((SELECT SUM(r.credit_quantity) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS credits_sold,
+        COALESCE((SELECT SUM(r.credit_quantity * r.credit_sell_value) FROM iptv_resellers r WHERE r.server_id = s.id AND r.period = $2), 0) AS reseller_revenue,
+        COALESCE((SELECT SUM(mc.credit_quantity) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_count,
+        COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active' AND mc.period = $2), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
-    `, [uid])
+    `, [uid, period])
 
     let resellerRevenue = 0, resellerCost = 0, resellerCredits = 0
     let myClientsRevenue = 0, myClientsCost = 0, myClientsCount = 0
@@ -426,7 +538,10 @@ export default async function iptvRoutes(app) {
       }
     })
 
-    const resellersCount = await query(`SELECT COUNT(*) FROM iptv_resellers WHERE user_id = $1`, [uid])
+    const resellersCount = await query(
+      `SELECT COUNT(*) FROM iptv_resellers WHERE user_id = $1 AND period = $2`,
+      [uid, period]
+    )
     const myServersCount = serversRes.rows.length
 
     const totalRevenue = resellerRevenue + myClientsRevenue
