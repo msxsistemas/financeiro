@@ -71,18 +71,25 @@ export default async function iptvRoutes(app) {
         COALESCE((SELECT SUM(mc.credit_quantity * mc.sell_value) FROM iptv_my_clients mc WHERE mc.server_id = s.id AND mc.status = 'active'), 0) AS my_clients_revenue
       FROM iptv_servers s WHERE s.user_id = $1 ORDER BY s.name
     `, [req.user.id])
-    return res.rows.map(s => ({
-      ...s,
-      max_clients: parseInt(s.max_clients),
-      credit_value: parseFloat(s.credit_value),
-      credits_sold: parseInt(s.credits_sold),
-      reseller_revenue: parseFloat(s.reseller_revenue),
-      my_clients_count: parseInt(s.my_clients_count),
-      my_clients_revenue: parseFloat(s.my_clients_revenue),
-      total_revenue: parseFloat(s.reseller_revenue) + parseFloat(s.my_clients_revenue),
-      total_cost: parseFloat(s.credit_value) * (parseInt(s.credits_sold) + parseInt(s.my_clients_count)),
-      profit: (parseFloat(s.reseller_revenue) + parseFloat(s.my_clients_revenue)) - (parseFloat(s.credit_value) * (parseInt(s.credits_sold) + parseInt(s.my_clients_count)))
-    }))
+    return res.rows.map(s => {
+      const creditValue = parseFloat(s.credit_value)
+      const creditsSold = parseInt(s.credits_sold)
+      const resellerRev = parseFloat(s.reseller_revenue)
+      // Faturamento/Lucro por servidor consideram apenas revendedores.
+      // Meus Servidores (my_clients) é apenas contador operacional.
+      return {
+        ...s,
+        max_clients: parseInt(s.max_clients),
+        credit_value: creditValue,
+        credits_sold: creditsSold,
+        reseller_revenue: resellerRev,
+        my_clients_count: parseInt(s.my_clients_count),
+        my_clients_revenue: parseFloat(s.my_clients_revenue),
+        total_revenue: resellerRev,
+        total_cost: creditValue * creditsSold,
+        profit: resellerRev - (creditValue * creditsSold)
+      }
+    })
   })
 
   app.post('/servers', { preHandler: [app.authenticate] }, async (req, reply) => {
@@ -386,11 +393,14 @@ export default async function iptvRoutes(app) {
       const myClients = parseInt(s.my_clients_count)
       const resellerRev = parseFloat(s.reseller_revenue)
       const myRev = parseFloat(s.my_clients_revenue)
-      const cost = parseFloat(s.credit_value) * (creditsSold + myClients)
-      const revenue = resellerRev + myRev
+      const creditValue = parseFloat(s.credit_value)
+      // Faturamento/Lucro agregam SÓ revendedores — clientes diretos
+      // (Meus Servidores) contam só pro card de contador.
+      const cost = creditValue * creditsSold
+      const revenue = resellerRev
       totalRevenue += revenue; totalCost += cost; totalCredits += creditsSold; totalMyClients += myClients
       return {
-        id: s.id, name: s.name, max_clients: parseInt(s.max_clients), credit_value: parseFloat(s.credit_value),
+        id: s.id, name: s.name, max_clients: parseInt(s.max_clients), credit_value: creditValue,
         credits_sold: creditsSold, my_clients: myClients, reseller_revenue: resellerRev, my_revenue: myRev,
         revenue, cost, profit: revenue - cost
       }
