@@ -302,31 +302,40 @@ export default function IPTV() {
       {/* ══════ TAB: MEUS CLIENTES ══════ */}
       {tab === 'my-clients' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center gap-3 flex-wrap">
+            <select value={filterServer} onChange={e => setFilterServer(e.target.value)}
+              className="border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm">
+              <option value="">Todos os servidores</option>
+              {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
             <button onClick={openNewClient} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Novo Servidor</button>
           </div>
-          {myClients.length === 0 ? (
+          {filteredClients.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
               <p className="text-4xl mb-3">📺</p>
               <p className="text-gray-400">Nenhum servidor cadastrado</p>
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
-              <table className="w-full text-sm min-w-[500px]">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                     <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Servidor</th>
                     <th className="text-center px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Clientes</th>
-                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Observações</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Valor/cliente</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Receita</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Lucro</th>
                     <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {myClients.map(c => (
+                  {filteredClients.map(c => (
                     <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-4 py-3 font-medium text-gray-800 dark:text-white">{c.server_name || '—'}</td>
                       <td className="px-4 py-3 text-center font-bold text-blue-600 dark:text-blue-400">{c.credit_quantity || 0}</td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs truncate max-w-xs">{c.notes || '—'}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{fmt(c.sell_value)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-green-600">{fmt(c.total_revenue)}</td>
+                      <td className={`px-4 py-3 text-right font-bold ${c.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(c.profit)}</td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => openEditClient(c)} className="text-indigo-500 hover:text-indigo-700 mr-2 text-xs">✏️</button>
                         <button onClick={() => setConfirmDelete({ type: 'my-clients', id: c.id, name: c.server_name || 'servidor' })} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
@@ -335,11 +344,21 @@ export default function IPTV() {
                   ))}
                 </tbody>
               </table>
-              <div className="px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 flex justify-end text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Total de clientes: </span>
-                <strong className="ml-2 text-blue-600 dark:text-blue-400">
-                  {myClients.reduce((s, c) => s + (parseInt(c.credit_quantity) || 0), 0)}
-                </strong>
+              <div className="px-4 py-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Total de clientes: <strong className="text-blue-600 dark:text-blue-400">
+                    {filteredClients.reduce((s, c) => s + (parseInt(c.credit_quantity) || 0), 0)}
+                  </strong>
+                </span>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Receita: <strong className="text-green-600">
+                    {fmt(filteredClients.reduce((s, c) => s + (parseFloat(c.total_revenue) || 0), 0))}
+                  </strong>
+                  {' · '}
+                  Lucro: <strong className="text-emerald-600">
+                    {fmt(filteredClients.reduce((s, c) => s + (parseFloat(c.profit) || 0), 0))}
+                  </strong>
+                </span>
               </div>
             </div>
           )}

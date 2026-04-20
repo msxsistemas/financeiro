@@ -206,12 +206,22 @@ export default async function iptvRoutes(app) {
       FROM iptv_my_clients mc LEFT JOIN iptv_servers s ON s.id = mc.server_id
       WHERE ${where} ORDER BY mc.name
     `, params)
-    return res.rows.map(c => ({
-      ...c,
-      sell_value: parseFloat(c.sell_value),
-      server_credit_value: parseFloat(c.server_credit_value || 0),
-      profit: parseFloat(c.sell_value) - parseFloat(c.server_credit_value || 0)
-    }))
+    return res.rows.map(c => {
+      const qty = parseInt(c.credit_quantity) || 0
+      const sell = parseFloat(c.sell_value) || 0
+      const credit = parseFloat(c.server_credit_value) || 0
+      const revenue = qty * sell
+      const cost = qty * credit
+      return {
+        ...c,
+        credit_quantity: qty,
+        sell_value: sell,
+        server_credit_value: credit,
+        total_revenue: revenue,
+        total_cost: cost,
+        profit: revenue - cost
+      }
+    })
   })
 
   app.post('/my-clients', { preHandler: [app.authenticate] }, async (req, reply) => {
