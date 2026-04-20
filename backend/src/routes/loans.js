@@ -45,10 +45,16 @@ function generateInstallments(loan) {
       })
     }
   } else {
-    // Juros simples (SAC): amortização constante, juros sobre o saldo devedor
-    // Parcela k: principal = P/n, juros = saldo_antes × i
+    // Juros simples: taxa aplicada uma única vez sobre o principal,
+    // total = P × (1 + i), distribuído igualmente em n parcelas
+    // Ex: 400 a 80% em 4x = (400 × 1.80) / 4 = 180 por parcela
+    const totalInterest = principal * rate
+    const totalDue = principal + totalInterest
+    const installmentTotal = totalDue / n
     const installmentPrincipal = principal / n
-    let balance = principal
+    const installmentInterest = totalInterest / n
+
+    let accTotal = 0, accPrincipal = 0, accInterest = 0
 
     for (let i = 1; i <= n; i++) {
       let dueDate = new Date(firstDueDateStr + 'T12:00:00')
@@ -56,19 +62,20 @@ function generateInstallments(loan) {
       else if (frequency === 'weekly') dueDate.setDate(dueDate.getDate() + (i - 1) * 7)
       else dueDate.setMonth(dueDate.getMonth() + (i - 1))
 
-      const interestAmount = rate > 0 ? balance * rate : 0
-      // Última parcela absorve o resíduo de arredondamento do principal
-      const principalThis = i === n ? balance : installmentPrincipal
-      balance -= principalThis
+      // Última parcela absorve resíduo de arredondamento
+      const total = i === n ? totalDue - accTotal : installmentTotal
+      const principalThis = i === n ? principal - accPrincipal : installmentPrincipal
+      const interestThis = i === n ? totalInterest - accInterest : installmentInterest
+      accTotal += total; accPrincipal += principalThis; accInterest += interestThis
 
       rows.push({
         loan_id: id,
         installment_number: i,
         due_date: dueDate.toISOString().split('T')[0],
         principal_amount: parseFloat(principalThis.toFixed(2)),
-        interest_amount: parseFloat(interestAmount.toFixed(2)),
+        interest_amount: parseFloat(interestThis.toFixed(2)),
         late_fee_amount: 0,
-        total_amount: parseFloat((principalThis + interestAmount).toFixed(2)),
+        total_amount: parseFloat(total.toFixed(2)),
         user_id
       })
     }

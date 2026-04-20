@@ -411,7 +411,10 @@ export default function Loans() {
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>Principal: <strong className="text-gray-800 dark:text-gray-200">{fmt(item.principal_amount)}</strong></span>
-                    <span>Juros: <strong>{fmtRate(item.interest_rate)}% {freqLabel[item.frequency]?.toLowerCase()} ({item.interest_type === 'compound' ? 'composto' : 'simples'})</strong></span>
+                    <span>Juros: <strong>
+                      {fmtRate(item.interest_rate)}%
+                      {item.interest_type === 'compound' ? ` ${freqLabel[item.frequency]?.toLowerCase()} (composto)` : ' total (simples)'}
+                    </strong></span>
                     <span>Parcelas: <strong>{item.installments_paid}/{item.installments_total}</strong></span>
                     {item.next_due_date && (
                       <span className={isOverdue(item.next_due_date) ? 'text-red-500 font-medium' : ''}>
@@ -647,7 +650,10 @@ export default function Loans() {
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
                 <div className="text-xs text-gray-500 dark:text-gray-400">Juros</div>
-                <div className="font-bold text-gray-800 dark:text-white">{fmtRate(detail.interest_rate)}% / {freqLabel[detail.frequency]}</div>
+                <div className="font-bold text-gray-800 dark:text-white">
+                  {fmtRate(detail.interest_rate)}%
+                  {detail.interest_type === 'compound' ? ` / ${freqLabel[detail.frequency]}` : ' Total'}
+                </div>
                 <div className="text-xs text-gray-400">{detail.interest_type === 'compound' ? 'Composto' : 'Simples'}</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
