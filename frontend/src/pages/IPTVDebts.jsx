@@ -30,7 +30,7 @@ export default function IPTVDebts() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [resellers, setResellers] = useState([])
 
-  const defaultForm = { name: '', phone: '', type: 'receivable', amount: '', due_date: '', no_due_date: false, notes: '', reseller_id: '' }
+  const defaultForm = { name: '', phone: '', type: 'receivable', amount: '', due_date: '', no_due_date: false, notes: '', reseller_id: '', is_recurring: false }
   const [form, setForm] = useState(defaultForm)
   const [payForm, setPayForm] = useState({ amount: '' })
 
@@ -69,7 +69,8 @@ export default function IPTVDebts() {
       amount: d.amount,
       due_date: d.due_date ? d.due_date.substring(0, 10) : '',
       no_due_date: !d.due_date,
-      notes: d.notes || '', reseller_id: d.reseller_id ? String(d.reseller_id) : ''
+      notes: d.notes || '', reseller_id: d.reseller_id ? String(d.reseller_id) : '',
+      is_recurring: !!d.is_recurring
     })
     setModal(true)
   }
@@ -89,7 +90,9 @@ export default function IPTVDebts() {
         amount: parseFloat(form.amount),
         reseller_id: form.reseller_id || null,
         client_id: null,
-        due_date: form.no_due_date ? null : (form.due_date || null)
+        due_date: form.no_due_date ? null : (form.due_date || null),
+        // Recorrência só faz sentido com data de vencimento
+        is_recurring: !!form.is_recurring && !form.no_due_date && !!form.due_date
       }
       delete payload.no_due_date
       if (editing) await api.put(`/api/iptv/debts/${editing.id}`, payload)
@@ -207,7 +210,12 @@ export default function IPTVDebts() {
               {filtered.map(d => (
                 <tr key={d.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-800 dark:text-white">{d.name}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-gray-800 dark:text-white">{d.name}</p>
+                      {d.is_recurring && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" title="Repete todo mês">🔁 Mensal</span>
+                      )}
+                    </div>
                     {d.phone && <p className="text-xs text-gray-400">{d.phone}</p>}
                     {d.notes && <p className="text-xs text-gray-400 truncate max-w-[200px]">{d.notes}</p>}
                   </td>
@@ -267,7 +275,7 @@ export default function IPTVDebts() {
           <div>
             <label className="flex items-center gap-2 mb-2 cursor-pointer">
               <input type="checkbox" checked={form.no_due_date}
-                onChange={e => setForm(p => ({ ...p, no_due_date: e.target.checked, due_date: e.target.checked ? '' : p.due_date }))}
+                onChange={e => setForm(p => ({ ...p, no_due_date: e.target.checked, due_date: e.target.checked ? '' : p.due_date, is_recurring: e.target.checked ? false : p.is_recurring }))}
                 className="w-4 h-4 text-indigo-600 rounded" />
               <span className="text-sm text-gray-700 dark:text-gray-300">Sem vencimento</span>
             </label>
@@ -279,6 +287,22 @@ export default function IPTVDebts() {
               </>
             )}
           </div>
+
+          {!form.no_due_date && (
+            <label className="flex items-center gap-3 cursor-pointer bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3">
+              <input type="checkbox" checked={!!form.is_recurring}
+                onChange={e => setForm(p => ({ ...p, is_recurring: e.target.checked }))}
+                className="w-4 h-4 text-emerald-600 rounded" />
+              <div>
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">🔁 Repetir todo mês</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-500">
+                  {form.due_date
+                    ? `Cria automaticamente no dia ${new Date(form.due_date + 'T12:00:00').getDate()} de cada mês.`
+                    : 'Escolha uma data de vencimento para habilitar.'}
+                </p>
+              </div>
+            </label>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Revendedor</label>
             <select value={form.reseller_id} onChange={e => setForm(p => ({ ...p, reseller_id: e.target.value }))}

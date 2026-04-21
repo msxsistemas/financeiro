@@ -743,6 +743,51 @@ cron.schedule('5 0 * * *', async () => {
   }
 })
 
+// Dívidas IPTV recorrentes mensais — spawn próxima ocorrência à meia-noite
+cron.schedule('10 0 * * *', async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const recurring = await query(`
+      SELECT * FROM iptv_debts
+      WHERE is_recurring = true
+        AND recurrence_next_date IS NOT NULL
+        AND recurrence_next_date <= $1
+    `, [today])
+
+    for (const d of recurring.rows) {
+      try {
+        const dueStr = d.recurrence_next_date instanceof Date
+          ? d.recurrence_next_date.toISOString().split('T')[0]
+          : String(d.recurrence_next_date).substring(0, 10)
+
+        // Nova ocorrência sem marcar como recorrente (o template original é quem repete)
+        await query(`
+          INSERT INTO iptv_debts (user_id, name, phone, type, amount, due_date, notes, reseller_id, client_id, is_recurring, recurrence_next_date)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, null)
+        `, [d.user_id, d.name, d.phone, d.type, d.amount, dueStr, d.notes, d.reseller_id, d.client_id])
+
+        // Avança o próximo vencimento do template em 1 mês (preservando o dia)
+        const parts = dueStr.split('-')
+        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0)
+        const targetDay = date.getDate()
+        date.setDate(1)
+        date.setMonth(date.getMonth() + 1)
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+        date.setDate(Math.min(targetDay, lastDay))
+        const pad2 = n => String(n).padStart(2, '0')
+        const nextStr = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+
+        await query('UPDATE iptv_debts SET recurrence_next_date = $1 WHERE id = $2', [nextStr, d.id])
+        app.log.info(`Dívida IPTV recorrente criada: ${d.name} (${dueStr})`)
+      } catch (err) {
+        app.log.error({ debtId: d.id, err: err.message }, 'Erro na dívida IPTV recorrente')
+      }
+    }
+  } catch (err) {
+    app.log.error({ err: err.message }, 'Erro no cron de dívidas IPTV recorrentes')
+  }
+})
+
 // ─── START ────────────────────────────────────────────────────
 const start = async () => {
   try {

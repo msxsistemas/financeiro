@@ -560,7 +560,27 @@ export default async function iptvRoutes(app) {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `)
+    await query(`ALTER TABLE iptv_debts ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false`).catch(() => {})
+    await query(`ALTER TABLE iptv_debts ADD COLUMN IF NOT EXISTS recurrence_next_date DATE`).catch(() => {})
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_iptv_debts_recurrence_next
+        ON iptv_debts (recurrence_next_date)
+        WHERE is_recurring = true
+    `).catch(() => {})
   })
+
+  // Soma 1 mês a uma data YYYY-MM-DD preservando o dia (31/jan → 28/fev)
+  function addOneMonth(dateStr) {
+    const parts = String(dateStr).substring(0, 10).split('-')
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0)
+    const targetDay = d.getDate()
+    d.setDate(1)
+    d.setMonth(d.getMonth() + 1)
+    const lastDayOfNext = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    d.setDate(Math.min(targetDay, lastDayOfNext))
+    const pad2 = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+  }
 
   app.get('/debts', { preHandler: [app.authenticate] }, async (req) => {
     const { status, type, start_date, end_date } = req.query
@@ -607,22 +627,33 @@ export default async function iptvRoutes(app) {
   })
 
   app.post('/debts', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { name, phone, type, amount, due_date, notes, reseller_id, client_id } = req.body
+    const { name, phone, type, amount, due_date, notes, reseller_id, client_id, is_recurring } = req.body
     if (!name || !amount) return reply.code(400).send({ error: 'Nome e valor sao obrigatorios' })
+    // Recorrência mensal só faz sentido com due_date definido
+    const recurring = !!is_recurring && !!due_date
+    const nextDate = recurring ? addOneMonth(due_date) : null
     const res = await query(
-      `INSERT INTO iptv_debts (user_id, name, phone, type, amount, due_date, notes, reseller_id, client_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [req.user.id, name, phone || null, type || 'receivable', amount, due_date || null, notes || null, reseller_id || null, client_id || null]
+      `INSERT INTO iptv_debts (user_id, name, phone, type, amount, due_date, notes, reseller_id, client_id, is_recurring, recurrence_next_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [req.user.id, name, phone || null, type || 'receivable', amount, due_date || null, notes || null, reseller_id || null, client_id || null, recurring, nextDate]
     )
     return reply.code(201).send(res.rows[0])
   })
 
   app.put('/debts/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { name, phone, type, amount, due_date, status, notes, reseller_id } = req.body
+    const { name, phone, type, amount, due_date, status, notes, reseller_id, is_recurring } = req.body
+    const check = await query('SELECT due_date, is_recurring FROM iptv_debts WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id])
+    if (!check.rows[0]) return reply.code(404).send({ error: 'Nao encontrado' })
+    const cur = check.rows[0]
+    const newRecurring = is_recurring != null ? !!is_recurring : !!cur.is_recurring
+    const newDue = due_date ?? (cur.due_date ? String(cur.due_date).substring(0, 10) : null)
+    const nextDate = newRecurring && newDue ? addOneMonth(newDue) : null
     const res = await query(
-      `UPDATE iptv_debts SET name=$1, phone=$2, type=$3, amount=$4, due_date=$5, status=$6, notes=$7, reseller_id=$8, updated_at=NOW()
-       WHERE id=$9 AND user_id=$10 RETURNING *`,
-      [name, phone || null, type, amount, due_date || null, status || 'pending', notes || null, reseller_id || null, req.params.id, req.user.id]
+      `UPDATE iptv_debts SET name=$1, phone=$2, type=$3, amount=$4, due_date=$5, status=$6, notes=$7, reseller_id=$8,
+         is_recurring=$9, recurrence_next_date=$10, updated_at=NOW()
+       WHERE id=$11 AND user_id=$12 RETURNING *`,
+      [name, phone || null, type, amount, due_date || null, status || 'pending', notes || null, reseller_id || null,
+        newRecurring, nextDate, req.params.id, req.user.id]
     )
     if (!res.rows[0]) return reply.code(404).send({ error: 'Nao encontrado' })
     return res.rows[0]
