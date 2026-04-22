@@ -44,7 +44,8 @@ export default function AdminDashboard() {
         {(stats.recent_activity || []).length === 0 ? (
           <p className="p-6 text-center text-gray-400">Sem atividade recente</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="text-left px-4 py-2 text-gray-500 font-medium">Usuário</th>
@@ -68,6 +69,7 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

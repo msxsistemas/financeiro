@@ -29,7 +29,8 @@ export default function AdminActivity() {
         ) : items.length === 0 ? (
           <p className="text-center py-8 text-gray-400">Sem atividade</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[520px]">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Usuário</th>
@@ -56,6 +57,7 @@ export default function AdminActivity() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

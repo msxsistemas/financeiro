@@ -34,12 +34,15 @@ export default function Layout() {
   }, [navigate])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-[100dvh] overflow-hidden bg-gray-100 dark:bg-gray-900">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {/* Spacer para o botão hamburger no mobile */}
-        <div className="lg:hidden h-14" />
-        <div className="p-4 lg:p-6">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Spacer para o botão hamburger no mobile: respeita o notch */}
+        <div
+          className="lg:hidden"
+          style={{ height: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)' }}
+        />
+        <div className="px-3 sm:px-4 lg:px-6 pb-safe py-3 lg:py-6">
           <Outlet />
         </div>
       </main>

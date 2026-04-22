@@ -11,11 +11,11 @@ export default function ConfirmDialog({ open, title, message, onConfirm, onCance
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
           {message && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{message}</p>}
         </div>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+          <button onClick={onCancel} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2.5 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
             Cancelar
           </button>
-          <button onClick={onConfirm} className={`flex-1 text-white py-2 rounded-lg text-sm font-medium ${confirmClass}`}>
+          <button onClick={onConfirm} className={`flex-1 text-white py-2.5 rounded-lg text-sm font-medium ${confirmClass}`}>
             {confirmLabel}
           </button>
         </div>

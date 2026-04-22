@@ -84,8 +84,8 @@ export default function WhatsAppLog() {
           <p className="text-gray-400 text-sm mt-1">As mensagens enviadas via WhatsApp aparecerão aqui.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-x-auto">
+          <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
                 <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Destinatário</th>

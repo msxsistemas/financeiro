@@ -38,8 +38,12 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Mobile burger */}
-      <button onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 bg-red-900 text-white p-2 rounded-lg shadow-lg">
+      <button
+        onClick={() => setMobileOpen(true)}
+        aria-label="Abrir menu admin"
+        className="lg:hidden fixed left-3 z-40 bg-red-900 text-white w-11 h-11 rounded-lg shadow-lg flex items-center justify-center"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}
+      >
         <Icon name="menu" size={20} />
       </button>
 
@@ -47,7 +51,7 @@ export default function AdminSidebar() {
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className="relative w-64 bg-red-950 text-white flex flex-col h-full shadow-2xl">
+          <aside className="relative w-72 max-w-[85vw] bg-red-950 text-white flex flex-col h-full shadow-2xl pt-safe pb-safe">
             <div className="flex items-center justify-between px-4 py-5 border-b border-red-900">
               <div className="flex items-center gap-2">
                 <Icon name="shield" size={22} className="text-red-300" />
@@ -72,7 +76,7 @@ export default function AdminSidebar() {
       )}
 
       {/* Desktop */}
-      <aside className="hidden lg:flex w-60 bg-red-950 text-white flex-col h-screen shrink-0">
+      <aside className="hidden lg:flex w-60 bg-red-950 text-white flex-col h-[100dvh] shrink-0">
         <div className="px-4 py-5 border-b border-red-900">
           <div className="flex items-center gap-2">
             <Icon name="shield" size={22} className="text-red-300" />

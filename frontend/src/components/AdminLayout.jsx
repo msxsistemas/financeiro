@@ -24,11 +24,14 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-[100dvh] overflow-hidden bg-gray-50 dark:bg-gray-900">
       <AdminSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="lg:hidden h-14" />
-        <div className="p-4 lg:p-6 max-w-7xl mx-auto">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div
+          className="lg:hidden"
+          style={{ height: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)' }}
+        />
+        <div className="px-3 sm:px-4 lg:px-6 py-3 lg:py-6 pb-safe max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>

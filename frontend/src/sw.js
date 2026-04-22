@@ -3,23 +3,32 @@ import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 
-// Precache de assets buildados
+// Precache dos assets buildados (revisão vem do injectManifest)
 precacheAndRoute(self.__WB_MANIFEST)
 
-self.skipWaiting()
+// Instalação: assume imediatamente, sem esperar a aba fechar
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+// Ativação: purga TODO cache que não seja gerenciado por este SW.
+// Isso apaga:
+//   - o cache legado 'financeiro-v1' (do SW manual antigo)
+//   - quaisquer precaches do workbox de builds anteriores
+//   - caches de runtime órfãos
+// Depois toma controle das abas abertas.
+const RUNTIME_CACHES = new Set(['pages', 'api-cache'])
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Purga caches de versões anteriores que não são gerenciados pelo workbox
-    // (evita servir index.html/assets velhos depois de deploy novo)
     try {
       const names = await caches.keys()
-      const current = new Set([
-        'pages', 'api-cache',
-        // Caches internos do workbox precache têm nomes tipo 'workbox-precache-v2-<scope>'
-      ])
+      // Descobre o cache de precache DESTE SW (nome contém o scope atual).
+      const myPrecache = names.find(
+        n => n.startsWith('workbox-precache') && n.includes(self.registration.scope.replace(/\/$/, ''))
+      )
       await Promise.all(
         names
-          .filter(n => !current.has(n) && !n.startsWith('workbox-precache'))
+          .filter(n => n !== myPrecache && !RUNTIME_CACHES.has(n))
           .map(n => caches.delete(n))
       )
     } catch {}
@@ -27,17 +36,16 @@ self.addEventListener('activate', (event) => {
   })())
 })
 
-// Navegação (páginas) — network-first com fallback para index.html
+// Navegação (HTML das páginas) — network-first com fallback pro cache.
+// Timeout curto pra não travar em rede ruim.
 const navHandler = new NetworkFirst({
   cacheName: 'pages',
   networkTimeoutSeconds: 3,
   plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 })]
 })
-registerRoute(
-  new NavigationRoute(navHandler, { denylist: [/^\/api\//] })
-)
+registerRoute(new NavigationRoute(navHandler, { denylist: [/^\/api\//] }))
 
-// API (apifinanceiro.msxsystem.site) — network-first, TTL 5 min
+// API (apifinanceiro.msxsystem.site) — network-first, TTL 5 min.
 registerRoute(
   ({ url }) => url.origin === 'https://apifinanceiro.msxsystem.site' && url.pathname.startsWith('/api/'),
   new NetworkFirst({
@@ -46,6 +54,13 @@ registerRoute(
     plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 300 })]
   })
 )
+
+// Mensagens do app: permite forçar atualização imediata se precisar.
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
 
 // ─── Push notifications ────────────────────────────────────────
 self.addEventListener('push', (event) => {
@@ -71,7 +86,6 @@ self.addEventListener('notificationclick', (event) => {
   const url = event.notification.data?.url || '/'
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Se já houver aba aberta, foca e navega
       for (const client of clientList) {
         if ('focus' in client) {
           client.focus()

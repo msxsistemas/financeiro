@@ -15,14 +15,18 @@ export default defineConfig({
       manifest: {
         name: 'Financeiro MSX',
         short_name: 'Financeiro',
-        description: 'Sistema financeiro completo — transacoes, dividas, emprestimos e mais',
+        description: 'Sistema financeiro completo — transações, dívidas, empréstimos e mais',
+        lang: 'pt-BR',
         theme_color: '#4f46e5',
-        background_color: '#f9fafb',
+        background_color: '#111827',
         display: 'standalone',
+        orientation: 'portrait-primary',
         start_url: '/',
+        scope: '/',
+        categories: ['finance', 'productivity'],
         icons: [
-          { src: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
-          { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' }
+          { src: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
         ]
       },
       injectManifest: {

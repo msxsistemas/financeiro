@@ -172,7 +172,9 @@ export default function Sidebar() {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 bg-gray-900 text-white p-2 rounded-lg shadow-lg"
+        aria-label="Abrir menu"
+        className="lg:hidden fixed left-3 z-40 bg-gray-900 text-white w-11 h-11 rounded-lg shadow-lg flex items-center justify-center text-lg"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}
       >
         ☰
       </button>
@@ -181,24 +183,28 @@ export default function Sidebar() {
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="relative w-64 bg-gray-900 text-white flex flex-col h-full shadow-2xl">
-            <div className="flex items-center justify-between px-4 py-5 border-b border-gray-700">
+          <aside className="relative w-72 max-w-[85vw] bg-gray-900 text-white flex flex-col h-full shadow-2xl pt-safe pb-safe">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-700">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">💎</span>
                 <span className="font-bold text-white text-lg">Financeiro</span>
               </div>
-              <button onClick={() => setMobileOpen(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button
+                onClick={() => setMobileOpen(false)}
+                aria-label="Fechar menu"
+                className="text-gray-400 hover:text-white w-10 h-10 flex items-center justify-center text-xl"
+              >✕</button>
             </div>
-            <nav className="flex-1 py-4 overflow-y-auto">
+            <nav className="flex-1 py-2 overflow-y-auto">
               <NavContent onNavClick={() => setMobileOpen(false)} />
             </nav>
             <div className="border-t border-gray-700 p-4 space-y-2">
               <button onClick={toggleDark}
-                className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full">
+                className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors text-sm w-full py-2">
                 <Icon name={dark ? 'sun' : 'moon'} size={18} />
                 <span>{dark ? 'Modo claro' : 'Modo escuro'}</span>
               </button>
-              <button onClick={handleLogout} className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition-colors text-sm w-full">
+              <button onClick={handleLogout} className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition-colors text-sm w-full py-2">
                 <Icon name="logout" size={18} />
                 <span>Sair</span>
               </button>
@@ -208,7 +214,7 @@ export default function Sidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className={`hidden lg:flex ${collapsed ? 'w-16' : 'w-60'} transition-all duration-300 bg-gray-900 text-white flex-col h-screen shrink-0`}>
+      <aside className={`hidden lg:flex ${collapsed ? 'w-16' : 'w-60'} transition-all duration-300 bg-gray-900 text-white flex-col h-[100dvh] shrink-0`}>
         {/* Logo */}
         <div className="flex items-center justify-between px-4 py-5 border-b border-gray-700">
           {!collapsed && (

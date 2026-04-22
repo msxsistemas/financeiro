@@ -6,16 +6,49 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Evita iOS aumentar a fonte no landscape */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   background-color: #f3f4f6;
   color: #111827;
+  /* Safe-area (notch iPhone, barra Android) é aplicada por componente
+     via utilitários .pt-safe / .pb-safe — aqui só garantimos a cor de
+     fundo do notch */
+  background-clip: padding-box;
+  /* Rede social: não deixar scroll horizontal por layout quebrado */
+  overflow-x: hidden;
 }
 
 .dark body {
   background-color: #111827;
   color: #f9fafb;
+}
+
+/* iOS Safari: inputs com fonte < 16px causam auto-zoom no focus.
+   Forçamos 16px em telas estreitas, independente da classe do Tailwind. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Alvos de toque confortáveis no mobile (Apple HIG: ≥ 44px) */
+@media (max-width: 640px) {
+  button, a[role="button"], [role="button"] {
+    min-height: 40px;
+  }
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -34,3 +67,43 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* Utilidades safe-area usáveis no JSX */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pl-safe { padding-left: env(safe-area-inset-left); }
+.pr-safe { padding-right: env(safe-area-inset-right); }
+
+/* ─── Responsivo global ────────────────────────────────────────
+   Força headers de página (flex items-center justify-between) a
+   quebrarem em mobile. Muitas páginas usam esse padrão sem
+   flex-wrap — no mobile vira ovflow horizontal. */
+@media (max-width: 640px) {
+  @supports selector(:has(*)) {
+    .flex.items-center.justify-between:has(> div > h1) {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .flex.items-center.justify-between:has(> h1) {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  }
+
+  /* Títulos de página grandes ficam um pouco menores no mobile */
+  h1.text-2xl {
+    font-size: 1.375rem;
+    line-height: 1.75rem;
+  }
+  h1.text-3xl {
+    font-size: 1.625rem;
+    line-height: 2rem;
+  }
+}
+
+/* Tabelas nunca devem extrapolar o container — fallback pra quem
+   esqueceu de wrappar em overflow-x-auto */
+table { max-width: 100%; }
+
+/* Imagens nunca quebram layout */
+img, svg, video { max-width: 100%; height: auto; }

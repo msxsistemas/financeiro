@@ -78,7 +78,8 @@ function FiscalReport({ year }) {
 
       {/* Tabela mensal */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Mês</th>
@@ -104,6 +105,7 @@ function FiscalReport({ year }) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Categorias */}
@@ -486,8 +488,8 @@ export default function Reports() {
           )}
 
           {/* Tabela mensal */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead className="bg-gray-50 dark:bg-gray-700/50 border-b dark:border-gray-700">
                 <tr>
                   <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Mês</th>
@@ -798,8 +800,8 @@ export default function Reports() {
           )}
 
           {/* Tabela mensal */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
                   <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Mês</th>
@@ -858,7 +860,8 @@ export default function Reports() {
             {products.products.length === 0 ? (
               <div className="text-center py-12 text-gray-400">Nenhum produto vendido no período</div>
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[520px]">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
                     <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Produto</th>
@@ -889,6 +892,7 @@ export default function Reports() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
