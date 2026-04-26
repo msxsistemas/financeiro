@@ -1,6 +1,7 @@
 import { query } from '../db/index.js'
 import axios from 'axios'
 import PDFDocument from 'pdfkit'
+import { MESSAGE_DEFAULTS, interpolate, fmtBRL } from '../utils/messageTemplates.js'
 
 const SERVER_URL = process.env.UAZAPI_URL
 
@@ -221,13 +222,18 @@ export default async function delinquentsRoutes(app) {
       allMap[k].total += parseFloat(r.total)
     }
 
-    const fmt = (v) => `R$ ${parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
+    const tplRes = await query('SELECT delinquent_message FROM users WHERE id = $1', [userId])
+    const template = tplRes.rows[0]?.delinquent_message || MESSAGE_DEFAULTS.delinquent
+
     let sent = 0
     let errors = 0
 
     for (const debtor of Object.values(allMap)) {
       const cleanPhone = debtor.phone.replace(/\D/g, '')
-      const msg = `Olá ${debtor.name || ''}! ⚠️\n\nVocê possui débitos em aberto totalizando *${fmt(debtor.total)}*.\n\nPor favor entre em contato para regularizar sua situação.\n\n_financeiro.msxsystem.site_`
+      const msg = interpolate(template, {
+        nome: debtor.name || '',
+        total: fmtBRL(debtor.total)
+      })
       try {
         await axios.post(`${server_url}/send/text`, { number: cleanPhone, text: msg }, {
           headers: { token: instance_token }, timeout: 10000

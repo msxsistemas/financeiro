@@ -1,6 +1,7 @@
 import { query, logActivity } from '../db/index.js'
 import axios from 'axios'
 import PDFDocument from 'pdfkit'
+import { MESSAGE_DEFAULTS, interpolate, fmtBRL } from '../utils/messageTemplates.js'
 
 const UAZAPI_URL = process.env.UAZAPI_URL
 
@@ -133,23 +134,16 @@ const payInstallmentSchema = {
   }
 }
 
-const DEFAULT_LOAN_MESSAGE = `Olá {nome}! 👋
-
-Lembrete: sua parcela *{parcela}* vence em *{vencimento}*.
-
-💰 Valor: *{valor}*
-
-Evite atrasos e possíveis encargos!`
-
 export default async function loansRoutes(app) {
 
-  // Mensagem padrão (template) do usuário
+  // Mensagem padrão (template) do usuário — legado, mantido para compat do modal em Loans.jsx.
+  // Hoje representa o template de "parcela a vencer"; templates completos ficam em /api/message-templates.
   app.get('/default-message', { preHandler: [app.authenticate] }, async (request) => {
     const r = await query('SELECT loan_default_message FROM users WHERE id = $1', [request.user.id])
     return {
-      message: r.rows[0]?.loan_default_message || DEFAULT_LOAN_MESSAGE,
+      message: r.rows[0]?.loan_default_message || MESSAGE_DEFAULTS.loan_upcoming,
       is_default: !r.rows[0]?.loan_default_message,
-      default_template: DEFAULT_LOAN_MESSAGE
+      default_template: MESSAGE_DEFAULTS.loan_upcoming
     }
   })
 
@@ -470,6 +464,23 @@ export default async function loansRoutes(app) {
     return { message: 'Empréstimo excluído' }
   })
 
+  // Reabrir empréstimo (desfazer "Quitado")
+  app.post('/:id/reopen', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.id
+    const { id } = request.params
+    const curRes = await query(
+      'SELECT id, contact_name, status FROM loans WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+      [id, userId]
+    )
+    if (!curRes.rows[0]) return reply.code(404).send({ error: 'Empréstimo não encontrado' })
+    if (curRes.rows[0].status !== 'paid') {
+      return reply.code(400).send({ error: 'Apenas empréstimos quitados podem ser reabertos' })
+    }
+    await query("UPDATE loans SET status = 'active' WHERE id = $1", [id])
+    await logActivity(userId, 'LOAN_REOPEN', 'loan', id, `Empréstimo reaberto: ${curRes.rows[0].contact_name}`)
+    return { message: 'Empréstimo reaberto' }
+  })
+
   // Registrar pagamento de parcela
   app.post('/installments/:id/pay', { schema: payInstallmentSchema, preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
@@ -663,7 +674,8 @@ export default async function loansRoutes(app) {
 
     const instRes = await query(`
       SELECT li.*, l.contact_name, l.contact_phone, l.interest_rate, l.frequency, l.custom_message,
-        u.loan_default_message AS user_default_message
+        u.loan_default_message AS user_upcoming_message,
+        u.loan_overdue_message AS user_overdue_message
       FROM loan_installments li
       JOIN loans l ON l.id = li.loan_id
       JOIN users u ON u.id = li.user_id
@@ -679,22 +691,27 @@ export default async function loansRoutes(app) {
     if (!instance_token) return reply.code(400).send({ error: 'WhatsApp não conectado' })
 
     const total = parseFloat(inst.total_amount) + parseFloat(inst.late_fee_amount || 0)
-    const dueDate = new Date(inst.due_date).toLocaleDateString('pt-BR')
-    const fmt = (v) => `R$ ${parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
-    const isOverdue = new Date(inst.due_date) < new Date()
+    const dueDateObj = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00')
+    const dueDate = dueDateObj.toLocaleDateString('pt-BR')
+    const now = new Date()
+    const todayMidday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0)
+    const daysLate = Math.max(0, Math.round((todayMidday - dueDateObj) / 86400000))
+    const isOverdue = daysLate > 0
 
-    const template = custom_message || inst.custom_message || inst.user_default_message
-    const interpolate = (tpl) => tpl
-      .replace(/\{nome\}/g, inst.contact_name || '')
-      .replace(/\{valor\}/g, fmt(total))
-      .replace(/\{vencimento\}/g, dueDate)
-      .replace(/\{parcela\}/g, inst.installment_number)
+    // Prioridade: custom_message (request) > custom_message (empréstimo) > template do usuário > default
+    const userTpl = isOverdue ? inst.user_overdue_message : inst.user_upcoming_message
+    const fallbackKey = isOverdue ? 'loan_overdue' : 'loan_upcoming'
+    const template = custom_message || inst.custom_message || userTpl || MESSAGE_DEFAULTS[fallbackKey]
 
-    const message = template
-      ? interpolate(template)
-      : (isOverdue
-        ? `Olá ${inst.contact_name || ''}! ⚠️\n\nSua parcela *${inst.installment_number}* está *VENCIDA* desde ${dueDate}.\n\n💰 Valor: *${fmt(inst.total_amount)}*${parseFloat(inst.late_fee_amount) > 0 ? `\n⚡ Mora: *${fmt(inst.late_fee_amount)}*\n💸 Total: *${fmt(total)}*` : ''}\n\nPor favor regularize o pagamento o quanto antes.\n\n_financeiro.msxsystem.site_`
-        : `Olá ${inst.contact_name || ''}! 👋\n\nLembrete: sua parcela *${inst.installment_number}* vence em *${dueDate}*.\n\n💰 Valor: *${fmt(total)}*\n\nEvite atrasos e possíveis encargos!\n\n_financeiro.msxsystem.site_`)
+    const message = interpolate(template, {
+      nome: inst.contact_name || '',
+      valor: fmtBRL(inst.total_amount),
+      vencimento: dueDate,
+      parcela: inst.installment_number,
+      mora: fmtBRL(inst.late_fee_amount || 0),
+      total: fmtBRL(total),
+      dias_atraso: daysLate
+    })
 
     const cleanPhone = inst.contact_phone.replace(/\D/g, '')
 
@@ -736,18 +753,23 @@ export default async function loansRoutes(app) {
 
     if (overdueRes.rows.length === 0) return { message: 'Nenhuma parcela vencida' }
 
-    const fmt = (v) => `R$ ${parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
-    const totalOverdue = overdueRes.rows.reduce((s, i) => s + parseFloat(i.total_amount) + parseFloat(i.late_fee_amount || 0), 0)
+    const tplRes = await query('SELECT loan_overdue_multi_message FROM users WHERE id = $1', [userId])
+    const userTpl = tplRes.rows[0]?.loan_overdue_multi_message
+    const template = userTpl || MESSAGE_DEFAULTS.loan_overdue_multi
 
-    let msg = `Olá ${loan.contact_name || ''}! ⚠️\n\n`
-    msg += `Você possui *${overdueRes.rows.length} parcela(s) em atraso*:\n\n`
-    for (const inst of overdueRes.rows) {
-      const dd = new Date(inst.due_date).toLocaleDateString('pt-BR')
+    const totalOverdue = overdueRes.rows.reduce((s, i) => s + parseFloat(i.total_amount) + parseFloat(i.late_fee_amount || 0), 0)
+    const parcelasLista = overdueRes.rows.map(inst => {
+      const dd = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')
       const tot = parseFloat(inst.total_amount) + parseFloat(inst.late_fee_amount || 0)
-      msg += `• Parcela ${inst.installment_number} — venc. ${dd} — *${fmt(tot)}*\n`
-    }
-    msg += `\n💸 *Total em aberto: ${fmt(totalOverdue)}*\n`
-    msg += `\nEntre em contato para regularizar. Novos encargos serão aplicados por dia de atraso.\n\n_financeiro.msxsystem.site_`
+      return `• Parcela ${inst.installment_number} — venc. ${dd} — *${fmtBRL(tot)}*`
+    }).join('\n')
+
+    const msg = interpolate(template, {
+      nome: loan.contact_name || '',
+      parcelas_count: overdueRes.rows.length,
+      parcelas_lista: parcelasLista,
+      total: fmtBRL(totalOverdue)
+    })
 
     const cleanPhone = loan.contact_phone.replace(/\D/g, '')
 

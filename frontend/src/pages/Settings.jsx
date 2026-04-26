@@ -39,6 +39,36 @@ export default function Settings() {
   const [tfaDisableModal, setTfaDisableModal] = useState(false)
   const [tfaLoading, setTfaLoading] = useState(false)
 
+  // Templates de mensagens WhatsApp
+  const [templates, setTemplates] = useState({ loan_upcoming: '', loan_overdue: '', loan_overdue_multi: '', delinquent: '' })
+  const [templateDefaults, setTemplateDefaults] = useState({})
+  const [templateVars, setTemplateVars] = useState({})
+  const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [activeTpl, setActiveTpl] = useState('loan_upcoming')
+
+  const loadTemplates = async () => {
+    try {
+      const { data } = await api.get('/api/message-templates')
+      setTemplates(data.templates || {})
+      setTemplateDefaults(data.defaults || {})
+      setTemplateVars(data.variables || {})
+    } catch {}
+  }
+  useEffect(() => { loadTemplates() }, [])
+
+  const saveTemplates = async () => {
+    setTemplatesLoading(true)
+    try {
+      await api.put('/api/message-templates', templates)
+      toast.success('Templates salvos!')
+      loadTemplates()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao salvar templates')
+    } finally { setTemplatesLoading(false) }
+  }
+
+  const resetTemplate = (key) => setTemplates(t => ({ ...t, [key]: templateDefaults[key] || '' }))
+
   const loadProfile = async () => {
     try {
       const { data } = await api.get('/api/auth/me')
@@ -336,6 +366,65 @@ export default function Settings() {
             {pwLoading ? 'Salvando...' : 'Alterar senha'}
           </button>
         </form>
+      </div>
+
+      {/* Templates de mensagens WhatsApp */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">💬 Templates de mensagens WhatsApp</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Personalize o texto enviado pelo sistema em cada tipo de cobrança. Deixe em branco para usar o texto padrão.
+        </p>
+
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[
+            { key: 'loan_upcoming', label: 'Parcela a vencer' },
+            { key: 'loan_overdue', label: 'Parcela vencida' },
+            { key: 'loan_overdue_multi', label: 'Várias parcelas vencidas' },
+            { key: 'delinquent', label: 'Inadimplente (consolidado)' }
+          ].map(t => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTpl(t.key)}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition ${
+                activeTpl === t.key
+                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                  : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div>
+          <textarea
+            rows={12}
+            value={templates[activeTpl] || ''}
+            onChange={e => setTemplates(t => ({ ...t, [activeTpl]: e.target.value }))}
+            placeholder={templateDefaults[activeTpl] || ''}
+            className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+          />
+          <div className="flex items-start justify-between gap-3 mt-2 flex-wrap">
+            <p className="text-xs text-gray-500 flex-1 min-w-[200px]">
+              Variáveis:{' '}
+              {(templateVars[activeTpl] || []).map((v, i) => (
+                <span key={v}>
+                  <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{' + v + '}'}</code>
+                  {i < (templateVars[activeTpl].length - 1) ? ', ' : ''}
+                </span>
+              ))}
+            </p>
+            <button type="button" onClick={() => resetTemplate(activeTpl)}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+              Restaurar padrão
+            </button>
+          </div>
+        </div>
+
+        <button onClick={saveTemplates} disabled={templatesLoading}
+          className="mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white px-5 py-2 rounded-lg text-sm font-medium">
+          {templatesLoading ? 'Salvando...' : 'Salvar templates'}
+        </button>
       </div>
 
       {/* Info do sistema */}

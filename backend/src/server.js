@@ -36,6 +36,8 @@ import trashRoutes, { purgeOldTrash } from './routes/trash.js'
 import adminRoutes from './routes/admin.js'
 import historyRoutes from './routes/history.js'
 import pushRoutes, { sendPushToUser } from './routes/push.js'
+import templatesRoutes from './routes/templates.js'
+import { MESSAGE_DEFAULTS, interpolate, fmtBRL } from './utils/messageTemplates.js'
 
 const app = Fastify({
   logger: { level: 'info' },
@@ -188,6 +190,7 @@ await app.register(trashRoutes, { prefix: '/api/trash' })
 await app.register(adminRoutes, { prefix: '/api/admin' })
 await app.register(historyRoutes, { prefix: '/api/history' })
 await app.register(pushRoutes, { prefix: '/api/push' })
+await app.register(templatesRoutes, { prefix: '/api/message-templates' })
 
 // Health check
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
@@ -465,11 +468,13 @@ cron.schedule('30 8 * * *', async () => {
   try {
     const today = new Date().toISOString().split('T')[0]
 
-    // Buscar usuários com notificação automática ativa
+    // Buscar usuários com notificação automática ativa + templates
     const usersRes = await query(`
-      SELECT DISTINCT l.user_id, ws.instance_token
+      SELECT DISTINCT l.user_id, ws.instance_token,
+        u.loan_default_message, u.loan_overdue_multi_message
       FROM loans l
       JOIN whatsapp_settings ws ON ws.user_id = l.user_id
+      JOIN users u ON u.id = l.user_id
       WHERE l.status = 'active' AND l.auto_notify = true
         AND ws.instance_token IS NOT NULL AND ws.instance_token != ''
     `)
@@ -507,13 +512,21 @@ cron.schedule('30 8 * * *', async () => {
             AND (li.last_notified_at IS NULL OR li.last_notified_at::DATE < CURRENT_DATE)
         `, [user.user_id])
 
+        const upcomingTpl = user.loan_default_message || MESSAGE_DEFAULTS.loan_upcoming
         for (const inst of upcomingRes.rows) {
           if (!inst.contact_phone) continue
           const cleanPhone = inst.contact_phone.replace(/\D/g, '')
-          const fmt = (v) => `R$ ${parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
-          const dueDate = new Date(inst.due_date).toLocaleDateString('pt-BR')
+          const dueDate = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')
           const total = parseFloat(inst.total_amount) + parseFloat(inst.late_fee_amount || 0)
-          const msg = `Olá ${inst.contact_name || ''}! 👋\n\nLembrete: sua parcela *${inst.installment_number}* vence amanhã em *${dueDate}*.\n\n💰 Valor: *${fmt(total)}*\n\nEvite atrasos!\n\n_financeiro.msxsystem.site_`
+          const msg = interpolate(upcomingTpl, {
+            nome: inst.contact_name || '',
+            valor: fmtBRL(total),
+            vencimento: dueDate,
+            parcela: inst.installment_number,
+            mora: fmtBRL(inst.late_fee_amount || 0),
+            total: fmtBRL(total),
+            dias_atraso: 0
+          })
           try {
             await axios.post(`${UAZAPI_URL}/send/text`, { number: cleanPhone, text: msg }, {
               headers: { token: user.instance_token }, timeout: 10000
@@ -544,17 +557,21 @@ cron.schedule('30 8 * * *', async () => {
           byLoan[inst.loan_id].items.push(inst)
         }
 
+        const overdueMultiTpl = user.loan_overdue_multi_message || MESSAGE_DEFAULTS.loan_overdue_multi
         for (const [loanId, group] of Object.entries(byLoan)) {
           const cleanPhone = group.contact_phone.replace(/\D/g, '')
-          const fmt = (v) => `R$ ${parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
           const totalOverdue = group.items.reduce((s, i) => s + parseFloat(i.total_amount) + parseFloat(i.late_fee_amount || 0), 0)
-          let msg = `Olá ${group.contact_name || ''}! ⚠️\n\n*${group.items.length} parcela(s) em atraso:*\n\n`
-          for (const inst of group.items) {
-            const dd = new Date(inst.due_date).toLocaleDateString('pt-BR')
+          const parcelasLista = group.items.map(inst => {
+            const dd = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')
             const tot = parseFloat(inst.total_amount) + parseFloat(inst.late_fee_amount || 0)
-            msg += `• Parcela ${inst.installment_number} — ${dd} — *${fmt(tot)}*\n`
-          }
-          msg += `\n💸 Total: *${fmt(totalOverdue)}*\n\nPor favor regularize o pagamento.\n\n_financeiro.msxsystem.site_`
+            return `• Parcela ${inst.installment_number} — ${dd} — *${fmtBRL(tot)}*`
+          }).join('\n')
+          const msg = interpolate(overdueMultiTpl, {
+            nome: group.contact_name || '',
+            parcelas_count: group.items.length,
+            parcelas_lista: parcelasLista,
+            total: fmtBRL(totalOverdue)
+          })
           try {
             await axios.post(`${UAZAPI_URL}/send/text`, { number: cleanPhone, text: msg }, {
               headers: { token: user.instance_token }, timeout: 10000

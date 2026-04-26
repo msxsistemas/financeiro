@@ -380,6 +380,18 @@ export default function Loans() {
     } catch { toast.error('Erro ao atualizar') }
   }
 
+  const reopenLoan = async (id) => {
+    if (!confirm('Reabrir este empréstimo? Ele voltará para "Ativo".')) return
+    try {
+      await api.post(`/api/loans/${id}/reopen`)
+      toast.success('Empréstimo reaberto')
+      load()
+      if (detail?.id === id) setDetailModal(false)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao reabrir')
+    }
+  }
+
   const deleteLoan = async (id) => {
     if (!confirm('Excluir este empréstimo?')) return
     try {
@@ -484,8 +496,14 @@ export default function Loans() {
                     )}
                   </>
                 )}
+                {item.status === 'paid' && (
+                  <button onClick={() => reopenLoan(item.id)}
+                    className="text-xs bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-lg font-medium transition-colors">
+                    ↩️ Reabrir
+                  </button>
+                )}
                 <button onClick={() => openEdit(item)}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 px-3 py-1.5 ml-auto">✏️ Editar</button>
+                  className={`text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 px-3 py-1.5 ${item.status === 'paid' ? '' : 'ml-auto'}`}>✏️ Editar</button>
                 <button onClick={() => setDeleteConfirm(item)}
                   className="text-xs text-red-500 hover:text-red-700 px-3 py-1.5">🗑️ Excluir</button>
               </div>
@@ -797,10 +815,15 @@ export default function Loans() {
                 className="flex-1 text-sm border border-red-300 text-red-600 hover:bg-red-50 py-2 rounded-lg font-medium">
                 Excluir
               </button>
-              {detail.status !== 'paid' && (
+              {detail.status !== 'paid' ? (
                 <button onClick={() => updateStatus(detail.id, 'paid')}
                   className="flex-1 text-sm bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium">
                   Marcar Quitado
+                </button>
+              ) : (
+                <button onClick={() => reopenLoan(detail.id)}
+                  className="flex-1 text-sm bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-medium">
+                  ↩️ Reabrir (desmarcar quitado)
                 </button>
               )}
             </div>
