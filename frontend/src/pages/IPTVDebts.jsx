@@ -143,7 +143,7 @@ export default function IPTVDebts() {
       </div>
 
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400">Em Aberto</p>
             <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.open_count}</p>
@@ -159,6 +159,10 @@ export default function IPTVDebts() {
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas</p>
             <p className="text-xl font-bold text-orange-500">{stats.overdue_count}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tab === 'payable' ? 'Total Pago' : 'Total Recebido'}</p>
+            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fmt(tab === 'payable' ? stats.total_paid : stats.total_received)}</p>
           </div>
         </div>
       )}

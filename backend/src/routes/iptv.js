@@ -614,6 +614,8 @@ export default async function iptvRoutes(app) {
         COUNT(*) FILTER (WHERE status IN ('pending','partial','overdue')) AS open_count,
         COALESCE(SUM(amount - paid_amount) FILTER (WHERE status IN ('pending','partial','overdue') AND type='receivable'), 0) AS total_receivable,
         COALESCE(SUM(amount - paid_amount) FILTER (WHERE status IN ('pending','partial','overdue') AND type='payable'), 0) AS total_payable,
+        COALESCE(SUM(paid_amount) FILTER (WHERE type='payable'), 0) AS total_paid,
+        COALESCE(SUM(paid_amount) FILTER (WHERE type='receivable'), 0) AS total_received,
         COUNT(*) FILTER (WHERE status IN ('pending','partial') AND due_date < CURRENT_DATE) AS overdue_count
       FROM iptv_debts WHERE user_id = $1
     `, [uid])
@@ -622,6 +624,8 @@ export default async function iptvRoutes(app) {
       open_count: parseInt(r.open_count),
       total_receivable: parseFloat(r.total_receivable),
       total_payable: parseFloat(r.total_payable),
+      total_paid: parseFloat(r.total_paid),
+      total_received: parseFloat(r.total_received),
       overdue_count: parseInt(r.overdue_count)
     }
   })
