@@ -764,11 +764,13 @@ cron.schedule('5 0 * * *', async () => {
 cron.schedule('10 0 * * *', async () => {
   try {
     const today = new Date().toISOString().split('T')[0]
+    // Gera a ocorrência assim que entramos no MÊS do vencimento (não no dia exato),
+    // pra dívida do mês aparecer com antecedência logo no dia 1º.
     const recurring = await query(`
       SELECT * FROM iptv_debts
       WHERE is_recurring = true
         AND recurrence_next_date IS NOT NULL
-        AND recurrence_next_date <= $1
+        AND date_trunc('month', recurrence_next_date) <= date_trunc('month', $1::date)
     `, [today])
 
     for (const d of recurring.rows) {
