@@ -411,32 +411,34 @@ export default function IPTV() {
               <p className="text-gray-400 mb-4">Nenhum servidor cadastrado</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {servers.map(s => (
-                <div key={s.id} className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{s.name}</h3>
-                    <div className="flex gap-2">
-                      <button onClick={() => openEditServer(s)} className="text-indigo-500 hover:text-indigo-700 text-sm">✏️</button>
-                      <button onClick={() => setConfirmDelete({ type: 'servers', id: s.id, name: s.name })} className="text-red-400 hover:text-red-600 text-sm">🗑️</button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-center mb-3">
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{s.max_clients}</p>
-                      <p className="text-xs text-gray-400">Clientes</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                      <p className="text-sm font-bold text-gray-600 dark:text-gray-300">{fmt(s.credit_value)}</p>
-                      <p className="text-xs text-gray-400">Valor Credito</p>
-                    </div>
-                  </div>
-                  <div className="pt-3 border-t dark:border-gray-700 flex justify-between text-xs">
-                    <span className="text-green-600">Receita: {fmt(s.total_revenue)}</span>
-                    <span className={`font-bold ${s.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>Lucro: {fmt(s.profit)}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead>
+                  <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Servidor / App</th>
+                    <th className="text-center px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Clientes</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Valor Credito</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Receita</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Lucro</th>
+                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {servers.map(s => (
+                    <tr key={s.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-3"><p className="font-medium text-gray-800 dark:text-white">{s.name}</p></td>
+                      <td className="px-4 py-3 text-center font-bold text-gray-900 dark:text-white">{s.max_clients}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{fmt(s.credit_value)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-green-600">{fmt(s.total_revenue)}</td>
+                      <td className={`px-4 py-3 text-right font-bold ${s.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(s.profit)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => openEditServer(s)} className="text-indigo-500 hover:text-indigo-700 mr-2 text-xs">✏️</button>
+                        <button onClick={() => setConfirmDelete({ type: 'servers', id: s.id, name: s.name })} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
