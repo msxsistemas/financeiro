@@ -29,8 +29,53 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    # Script definido uma vez só e reusado nas 3 tentativas (SSH da VPS costuma
+    # dar "dial tcp i/o timeout" esporádico). Todos os passos são idempotentes,
+    # então repetir é seguro.
+    env:
+      DEPLOY_SCRIPT: |
+        set -e
+        cd /var/www/financeiro
+
+        echo "=== git pull ==="
+        git fetch --all
+        git reset --hard origin/main
+
+        echo "=== aplicar migrations pendentes ==="
+        for f in backend/src/migrations/*.sql; do
+          name=$(basename "$f")
+          echo "-- $name"
+          docker exec -i financeiro_postgres psql -U financeiro_user -d financeiro < "$f" || true
+        done
+
+        echo "=== backend deps ==="
+        cd backend
+        mkdir -p logs
+        npm ci --omit=dev --silent || npm install --omit=dev --silent
+
+        echo "=== restart API ==="
+        npx pm2 delete financeiro-api >/dev/null 2>&1 || true
+        npx pm2 start ecosystem.config.cjs
+        npx pm2 save
+        cd ..
+
+        echo "=== frontend build ==="
+        cd frontend
+        npm ci --silent || npm install --silent
+        npm run build
+        cd ..
+
+        echo "=== sync nginx config + reload ==="
+        if [ -f /etc/nginx/sites-available/financeiro ]; then
+          sudo cp nginx.conf /etc/nginx/sites-available/financeiro
+          sudo nginx -t && sudo systemctl reload nginx
+        fi
+
+        echo "=== DEPLOY OK ==="
     steps:
-      - name: Deploy via SSH
+      - name: Deploy via SSH (tentativa 1)
+        id: try1
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -38,43 +83,57 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script_stop: true
+          timeout: 60s
           command_timeout: 15m
-          script: |
-            set -e
-            cd /var/www/financeiro
+          script: ${{ env.DEPLOY_SCRIPT }}
 
-            echo "=== git pull ==="
-            git fetch --all
-            git reset --hard origin/main
+      - name: Aguardar antes da tentativa 2
+        if: steps.try1.outcome == 'failure'
+        run: |
+          echo "Tentativa 1 falhou — nova tentativa em 30s"
+          sleep 30
 
-            echo "=== aplicar migrations pendentes ==="
-            for f in backend/src/migrations/*.sql; do
-              name=$(basename "$f")
-              echo "-- $name"
-              docker exec -i financeiro_postgres psql -U financeiro_user -d financeiro < "$f" || true
-            done
+      - name: Deploy via SSH (tentativa 2)
+        id: try2
+        if: steps.try1.outcome == 'failure'
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          timeout: 60s
+          command_timeout: 15m
+          script: ${{ env.DEPLOY_SCRIPT }}
 
-            echo "=== backend deps ==="
-            cd backend
-            mkdir -p logs
-            npm ci --omit=dev --silent || npm install --omit=dev --silent
+      - name: Aguardar antes da tentativa 3
+        if: steps.try1.outcome == 'failure' && steps.try2.outcome == 'failure'
+        run: |
+          echo "Tentativa 2 falhou — última tentativa em 60s"
+          sleep 60
 
-            echo "=== restart API ==="
-            npx pm2 delete financeiro-api >/dev/null 2>&1 || true
-            npx pm2 start ecosystem.config.cjs
-            npx pm2 save
-            cd ..
+      # Última tentativa: sem continue-on-error, então uma falha aqui reprova o job
+      - name: Deploy via SSH (tentativa 3)
+        if: steps.try1.outcome == 'failure' && steps.try2.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          timeout: 60s
+          command_timeout: 15m
+          script: ${{ env.DEPLOY_SCRIPT }}
 
-            echo "=== frontend build ==="
-            cd frontend
-            npm ci --silent || npm install --silent
-            npm run build
-            cd ..
-
-            echo "=== sync nginx config + reload ==="
-            if [ -f /etc/nginx/sites-available/financeiro ]; then
-              sudo cp nginx.conf /etc/nginx/sites-available/financeiro
-              sudo nginx -t && sudo systemctl reload nginx
-            fi
-
-            echo "=== DEPLOY OK ==="
+      - name: Resultado
+        run: |
+          if [ "${{ steps.try1.outcome }}" = "success" ]; then
+            echo "Deploy OK na tentativa 1"
+          elif [ "${{ steps.try2.outcome }}" = "success" ]; then
+            echo "Deploy OK na tentativa 2 (tentativa 1 falhou)"
+          else
+            echo "Deploy OK na tentativa 3 (tentativas 1 e 2 falharam)"
+          fi
