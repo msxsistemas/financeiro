@@ -61,6 +61,7 @@ export default function Loans() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [notifyingLoan, setNotifyingLoan] = useState(null)
   const [notifyingAll, setNotifyingAll] = useState(false)
+  const [notifyingInst, setNotifyingInst] = useState(null)
 
   const [modal, setModal] = useState(false)
   const [detailModal, setDetailModal] = useState(false)
@@ -355,12 +356,13 @@ export default function Loans() {
   }
 
   const notifyInstallment = async (inst) => {
+    setNotifyingInst(inst.id)
     try {
       await api.post(`/api/loans/installments/${inst.id}/notify`)
-      toast.success('Cobrança enviada via WhatsApp!')
+      toast.success(`Cobrança da parcela ${inst.installment_number} enviada!`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erro ao enviar cobrança')
-    }
+    } finally { setNotifyingInst(null) }
   }
 
   const notifyAllDue = async () => {
@@ -807,9 +809,10 @@ export default function Loans() {
                             }} className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded font-medium">
                               Pagar
                             </button>
-                            <button onClick={() => notifyInstallment(inst)}
-                              className="text-xs bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded font-medium">
-                              📲
+                            <button onClick={() => notifyInstallment(inst)} disabled={notifyingInst === inst.id}
+                              className="text-xs bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded font-medium disabled:opacity-60 whitespace-nowrap"
+                              title="Enviar cobrança desta parcela no WhatsApp">
+                              {notifyingInst === inst.id ? '⏳' : '📲 Cobrar'}
                             </button>
                           </div>
                         ) : (
