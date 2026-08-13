@@ -1,4 +1,5 @@
 import { query, logActivity } from '../db/index.js'
+import axios from 'axios'
 import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
 import { generatePixPayload } from '../utils/pix.js'
@@ -18,7 +19,9 @@ const createDebtSchema = {
       installments: { type: ['integer', 'null'], minimum: 1, maximum: 360 },
       notes: { type: ['string', 'null'], maxLength: 2000 },
       auto_installments: { type: 'boolean' },
-      is_recurring: { type: 'boolean' }
+      is_recurring: { type: 'boolean' },
+      auto_notify: { type: 'boolean' },
+      notify_days_before: { type: ['integer', 'null'], minimum: 0, maximum: 30 }
     }
   }
 }
@@ -45,6 +48,23 @@ const payDebtSchema = {
       notes: { type: ['string', 'null'], maxLength: 500 }
     }
   }
+}
+
+const UAZAPI_URL = process.env.UAZAPI_URL
+
+// Mensagem padrão de cobrança de dívida
+export function debtChargeMessage(debt) {
+  const remaining = parseFloat(debt.amount) - parseFloat(debt.paid_amount || 0)
+  const valor = `R$ ${remaining.toFixed(2).replace('.', ',')}`
+  const dueDate = debt.due_date ? new Date(String(debt.due_date).substring(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : 'não definido'
+  const isOverdue = debt.due_date && String(debt.due_date).substring(0, 10) < new Date().toISOString().split('T')[0]
+
+  if (debt.type !== 'receivable') {
+    return `Lembrete: dívida de *${valor}* com ${debt.contact_name || 'credor'}\nReferente a: ${debt.description}\nVencimento: ${dueDate}`
+  }
+  return isOverdue
+    ? `Olá ${debt.contact_name || ''}! 👋\n\nO valor de *${valor}* referente a *${debt.description}* venceu em ${dueDate}.\n\nAssim que possível, poderia regularizar? Qualquer dúvida, estou à disposição! 😊`
+    : `Olá ${debt.contact_name || ''}! 👋\n\nPassando para lembrar do valor de *${valor}* referente a *${debt.description}*.\n\nVencimento: ${dueDate}\n\nQualquer dúvida, estou à disposição! 😊`
 }
 
 export default async function debtsRoutes(app) {
@@ -120,7 +140,7 @@ export default async function debtsRoutes(app) {
   // Criar dívida
   app.post('/', { schema: createDebtSchema, preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { description, amount, type, contact_name, contact_phone, due_date, installments, notes, auto_installments, is_recurring } = request.body
+    const { description, amount, type, contact_name, contact_phone, due_date, installments, notes, auto_installments, is_recurring, auto_notify, notify_days_before } = request.body
 
     if (!description || !amount || !type) {
       return reply.code(400).send({ error: 'Descrição, valor e tipo são obrigatórios' })
@@ -131,11 +151,14 @@ export default async function debtsRoutes(app) {
     const recurring = !!is_recurring && !!due_date && !auto_installments
     const nextDate = recurring ? addOneMonth(due_date) : null
 
+    const notify = auto_notify != null ? !!auto_notify : true
+    const daysBefore = Math.min(30, Math.max(0, parseInt(notify_days_before) || 0))
+
     const result = await query(`
-      INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id, is_recurring, recurrence_next_date)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id, is_recurring, recurrence_next_date, auto_notify, notify_days_before)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
-    `, [description, amount, type, contact_name || null, contact_phone || null, due_date || null, numInstallments, notes || null, userId, recurring, nextDate])
+    `, [description, amount, type, contact_name || null, contact_phone || null, due_date || null, numInstallments, notes || null, userId, recurring, nextDate, notify, daysBefore])
 
     const debt = result.rows[0]
     const typeLabel = type === 'payable' ? 'A Pagar' : 'A Receber'
@@ -154,14 +177,16 @@ export default async function debtsRoutes(app) {
 
         await query(`
           INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date,
-            installments, notes, user_id, parent_debt_id, installment_number, total_installments)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            installments, notes, user_id, parent_debt_id, installment_number, total_installments,
+            auto_notify, notify_days_before)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         `, [
           `${description} (${i}/${numInstallments})`,
           installmentAmount, type,
           contact_name || null, contact_phone || null,
           dueDateStr, 1, notes || null, userId,
-          debt.id, i, numInstallments
+          debt.id, i, numInstallments,
+          notify, daysBefore
         ])
       }
     }
@@ -172,9 +197,9 @@ export default async function debtsRoutes(app) {
   // Atualizar dívida
   app.put('/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { description, amount, type, status, contact_name, contact_phone, due_date, installments, notes, is_recurring } = request.body
+    const { description, amount, type, status, contact_name, contact_phone, due_date, installments, notes, is_recurring, auto_notify, notify_days_before } = request.body
 
-    const check = await query('SELECT id, due_date, is_recurring FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
+    const check = await query('SELECT id, due_date, is_recurring, auto_notify, notify_days_before FROM debts WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [request.params.id, userId])
     if (!check.rows[0]) return reply.code(404).send({ error: 'Não encontrado' })
 
     const cur = check.rows[0]
@@ -182,6 +207,10 @@ export default async function debtsRoutes(app) {
     const newDueStr = newDue instanceof Date ? newDue.toISOString().split('T')[0] : (newDue ? String(newDue).substring(0, 10) : null)
     const newRecurring = is_recurring != null ? !!is_recurring : cur.is_recurring
     const nextDate = newRecurring && newDueStr ? addOneMonth(newDueStr) : null
+    const newNotify = auto_notify != null ? !!auto_notify : cur.auto_notify
+    const newDaysBefore = notify_days_before != null
+      ? Math.min(30, Math.max(0, parseInt(notify_days_before) || 0))
+      : (cur.notify_days_before || 0)
 
     const result = await query(`
       UPDATE debts SET
@@ -189,10 +218,11 @@ export default async function debtsRoutes(app) {
         contact_name = $5, contact_phone = $6, due_date = $7,
         installments = $8, notes = $9,
         is_recurring = $10, recurrence_next_date = $11,
+        auto_notify = $12, notify_days_before = $13,
         updated_at = NOW()
-      WHERE id = $12 AND user_id = $13 AND deleted_at IS NULL
+      WHERE id = $14 AND user_id = $15 AND deleted_at IS NULL
       RETURNING *
-    `, [description, amount, type, status, contact_name || null, contact_phone || null, due_date || null, installments || 1, notes || null, newRecurring, nextDate, request.params.id, userId])
+    `, [description, amount, type, status, contact_name || null, contact_phone || null, due_date || null, installments || 1, notes || null, newRecurring, nextDate, newNotify, newDaysBefore, request.params.id, userId])
 
     await logActivity(userId, 'UPDATE', 'debt', request.params.id, `Dívida atualizada: ${description}`)
     invalidateDashboardCache(userId)
@@ -429,6 +459,72 @@ export default async function debtsRoutes(app) {
     reply.header('Content-Type', 'application/pdf')
     reply.header('Content-Disposition', `attachment; filename="cobranca_${debt.id}.pdf"`)
     return reply.send(buffer)
+  })
+
+  // Cards de estatísticas (Em Aberto / A Receber / A Pagar / Vencidas / Total pago-recebido)
+  app.get('/stats', { preHandler: [app.authenticate] }, async (request) => {
+    const res = await query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status IN ('pending','partial','overdue')) AS open_count,
+        COALESCE(SUM(amount - paid_amount) FILTER (WHERE status IN ('pending','partial','overdue') AND type='receivable'), 0) AS total_receivable,
+        COALESCE(SUM(amount - paid_amount) FILTER (WHERE status IN ('pending','partial','overdue') AND type='payable'), 0) AS total_payable,
+        COALESCE(SUM(paid_amount) FILTER (WHERE type='payable'), 0) AS total_paid,
+        COALESCE(SUM(paid_amount) FILTER (WHERE type='receivable'), 0) AS total_received,
+        COUNT(*) FILTER (WHERE status IN ('pending','partial','overdue') AND due_date < CURRENT_DATE) AS overdue_count,
+        COUNT(*) FILTER (WHERE status IN ('pending','partial') AND due_date = CURRENT_DATE) AS due_today_count
+      FROM debts WHERE user_id = $1 AND deleted_at IS NULL
+    `, [request.user.id])
+    const r = res.rows[0]
+    return {
+      open_count: parseInt(r.open_count),
+      total_receivable: parseFloat(r.total_receivable),
+      total_payable: parseFloat(r.total_payable),
+      total_paid: parseFloat(r.total_paid),
+      total_received: parseFloat(r.total_received),
+      overdue_count: parseInt(r.overdue_count),
+      due_today_count: parseInt(r.due_today_count)
+    }
+  })
+
+  // Cobrar em massa: todas as dívidas a receber vencidas (ou vencendo hoje) com telefone
+  app.post('/notify-overdue', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.id
+
+    const tokenRes = await query('SELECT instance_token FROM whatsapp_settings WHERE user_id = $1', [userId])
+    const instanceToken = tokenRes.rows[0]?.instance_token
+    if (!instanceToken) return reply.code(400).send({ error: 'WhatsApp não conectado' })
+
+    const debtsRes = await query(`
+      SELECT * FROM debts
+      WHERE user_id = $1 AND deleted_at IS NULL
+        AND type = 'receivable'
+        AND status IN ('pending', 'partial', 'overdue')
+        AND contact_phone IS NOT NULL AND contact_phone != ''
+        AND due_date IS NOT NULL AND due_date <= CURRENT_DATE
+      ORDER BY due_date ASC
+    `, [userId])
+
+    if (debtsRes.rows.length === 0) {
+      return { sent: 0, failed: 0, message: 'Nenhuma dívida vencida para cobrar' }
+    }
+
+    let sent = 0, failed = 0
+    for (const debt of debtsRes.rows) {
+      try {
+        await axios.post(`${UAZAPI_URL}/send/text`, {
+          number: debt.contact_phone.replace(/\D/g, ''),
+          text: debtChargeMessage(debt)
+        }, { headers: { token: instanceToken }, timeout: 15000 })
+        await query('UPDATE debts SET last_notified_at = NOW() WHERE id = $1', [debt.id])
+        sent++
+      } catch (err) {
+        app.log.error({ debtId: debt.id, err: err.message }, 'Erro ao cobrar dívida vencida')
+        failed++
+      }
+    }
+
+    await logActivity(userId, 'WHATSAPP_DEBT_NOTIFY', 'debt', null, `Cobrança em massa: ${sent} enviada(s), ${failed} falha(s)`)
+    return { sent, failed, message: `${sent} cobrança(s) enviada(s)${failed ? ` · ${failed} falha(s)` : ''}` }
   })
 
   // Resumo

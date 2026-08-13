@@ -60,6 +60,7 @@ export default function Loans() {
   const [editing, setEditing] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [notifyingLoan, setNotifyingLoan] = useState(null)
+  const [notifyingAll, setNotifyingAll] = useState(false)
 
   const [modal, setModal] = useState(false)
   const [detailModal, setDetailModal] = useState(false)
@@ -362,6 +363,17 @@ export default function Loans() {
     }
   }
 
+  const notifyAllDue = async () => {
+    setNotifyingAll(true)
+    try {
+      const { data } = await api.post('/api/loans/notify-all-due')
+      toast.success(data.message)
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao enviar cobranças')
+    } finally { setNotifyingAll(false) }
+  }
+
   const notifyOverdue = async (loanId) => {
     try {
       const { data } = await api.post(`/api/loans/${loanId}/notify-overdue`)
@@ -407,6 +419,10 @@ export default function Loans() {
   return (
     <div className="space-y-5">
       <PageHeader title="Empréstimos" subtitle="Controle de crédito pessoal com juros e cobranças automáticas">
+        <button onClick={notifyAllDue} disabled={notifyingAll}
+          className="bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
+          {notifyingAll ? '⏳ Enviando...' : '📲 Cobrar vencidos e hoje'}
+        </button>
         <button onClick={() => setMsgModal(true)}
           className="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-medium">
           ⚙️ Mensagem padrão

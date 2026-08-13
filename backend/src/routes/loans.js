@@ -729,6 +729,107 @@ export default async function loansRoutes(app) {
     }
   })
 
+  // Cobrar TODOS os empréstimos: parcelas vencidas + vencendo hoje (1 mensagem por devedor)
+  app.post('/notify-all-due', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const userId = request.user.id
+
+    const settingsRes = await query('SELECT instance_token FROM whatsapp_settings WHERE user_id = $1', [userId])
+    const instance_token = settingsRes.rows[0]?.instance_token
+    if (!instance_token) return reply.code(400).send({ error: 'WhatsApp não conectado' })
+
+    const today = new Date().toISOString().split('T')[0]
+    const instRes = await query(`
+      SELECT li.*, l.contact_name, l.contact_phone, l.custom_message
+      FROM loan_installments li
+      JOIN loans l ON l.id = li.loan_id
+      WHERE li.user_id = $1 AND l.deleted_at IS NULL
+        AND l.status = 'active'
+        AND NOT li.paid
+        AND li.due_date <= $2
+        AND l.contact_phone IS NOT NULL AND l.contact_phone != ''
+      ORDER BY l.contact_name, li.due_date
+    `, [userId, today])
+
+    if (instRes.rows.length === 0) {
+      return { sent: 0, failed: 0, installments: 0, message: 'Nenhuma parcela vencida ou vencendo hoje' }
+    }
+
+    // Agrupa por empréstimo — 1 mensagem por devedor, listando todas as parcelas
+    const byLoan = new Map()
+    for (const inst of instRes.rows) {
+      if (!byLoan.has(inst.loan_id)) byLoan.set(inst.loan_id, [])
+      byLoan.get(inst.loan_id).push(inst)
+    }
+
+    const tplRes = await query(`
+      SELECT loan_default_message, loan_overdue_message, loan_overdue_multi_message
+      FROM users WHERE id = $1
+    `, [userId])
+    const tpls = tplRes.rows[0] || {}
+
+    let sent = 0, failed = 0, notified = 0
+    for (const [loanId, list] of byLoan) {
+      const first = list[0]
+      try {
+        let message
+        if (list.length > 1) {
+          const total = list.reduce((s, i) => s + parseFloat(i.total_amount) + parseFloat(i.late_fee_amount || 0), 0)
+          const parcelasLista = list.map(inst => {
+            const dd = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')
+            const tot = parseFloat(inst.total_amount) + parseFloat(inst.late_fee_amount || 0)
+            return `• Parcela ${inst.installment_number} — venc. ${dd} — *${fmtBRL(tot)}*`
+          }).join('\n')
+          message = interpolate(tpls.loan_overdue_multi_message || MESSAGE_DEFAULTS.loan_overdue_multi, {
+            nome: first.contact_name || '',
+            parcelas_count: list.length,
+            parcelas_lista: parcelasLista,
+            total: fmtBRL(total)
+          })
+        } else {
+          const inst = first
+          const dueDateObj = new Date(String(inst.due_date).substring(0, 10) + 'T12:00:00')
+          const now = new Date()
+          const todayMidday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0)
+          const daysLate = Math.max(0, Math.round((todayMidday - dueDateObj) / 86400000))
+          const isOverdue = daysLate > 0
+          const userTpl = isOverdue ? tpls.loan_overdue_message : tpls.loan_default_message
+          const template = inst.custom_message || userTpl || MESSAGE_DEFAULTS[isOverdue ? 'loan_overdue' : 'loan_upcoming']
+          message = interpolate(template, {
+            nome: inst.contact_name || '',
+            valor: fmtBRL(inst.total_amount),
+            vencimento: dueDateObj.toLocaleDateString('pt-BR'),
+            parcela: inst.installment_number,
+            mora: fmtBRL(inst.late_fee_amount || 0),
+            total: fmtBRL(parseFloat(inst.total_amount) + parseFloat(inst.late_fee_amount || 0)),
+            dias_atraso: daysLate
+          })
+        }
+
+        await axios.post(`${UAZAPI_URL}/send/text`, {
+          number: first.contact_phone.replace(/\D/g, ''), text: message
+        }, { headers: { token: instance_token, 'Content-Type': 'application/json' }, timeout: 15000 })
+
+        await query(
+          `UPDATE loan_installments SET last_notified_at = NOW() WHERE id = ANY($1::uuid[])`,
+          [list.map(i => i.id)]
+        )
+        sent++
+        notified += list.length
+      } catch (err) {
+        app.log.error({ loanId, err: err.message }, 'Erro na cobrança geral de empréstimos')
+        failed++
+      }
+    }
+
+    await logActivity(userId, 'LOAN_NOTIFY_ALL', 'loan', null,
+      `Cobrança geral: ${sent} devedor(es), ${notified} parcela(s), ${failed} falha(s)`)
+
+    return {
+      sent, failed, installments: notified,
+      message: `${sent} cobrança(s) enviada(s) · ${notified} parcela(s)${failed ? ` · ${failed} falha(s)` : ''}`
+    }
+  })
+
   // Enviar cobrança para todas as parcelas vencidas de um empréstimo
   app.post('/:id/notify-overdue', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id

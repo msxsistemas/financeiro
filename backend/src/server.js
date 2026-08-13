@@ -15,7 +15,7 @@ import axios from 'axios'
 import { db, query } from './db/index.js'
 import authRoutes from './routes/auth.js'
 import dashboardRoutes from './routes/dashboard.js'
-import debtsRoutes from './routes/debts.js'
+import debtsRoutes, { debtChargeMessage } from './routes/debts.js'
 import whatsappRoutes from './routes/whatsapp.js'
 import calendarRoutes from './routes/calendar.js'
 import reportsRoutes from './routes/reports.js'
@@ -301,6 +301,34 @@ cron.schedule('* * * * *', async () => {
       await query('UPDATE loan_installments SET push_overdue_sent_at = NOW() WHERE id = $1', [inst.id])
     }
   } catch (err) { app.log.error({ err: err.message }, 'Erro push parcelas') }
+
+  // Dívidas particulares vencendo hoje ou vencidas (notifica o dono da conta 1x por dia)
+  try {
+    const rDebts = await query(`
+      SELECT id, description, amount, paid_amount, type, due_date, contact_name, user_id,
+        (due_date < CURRENT_DATE) AS is_overdue
+      FROM debts
+      WHERE deleted_at IS NULL
+        AND status IN ('pending', 'partial', 'overdue')
+        AND due_date IS NOT NULL
+        AND due_date <= CURRENT_DATE
+        AND (push_due_sent_at IS NULL OR push_due_sent_at < CURRENT_DATE)
+    `)
+    for (const debt of rDebts.rows) {
+      const remaining = parseFloat(debt.amount) - parseFloat(debt.paid_amount || 0)
+      const valor = `R$ ${remaining.toFixed(2).replace('.', ',')}`
+      const tipo = debt.type === 'payable' ? 'A pagar' : 'A receber'
+      const quem = debt.contact_name ? ` · ${debt.contact_name}` : ''
+      await sendPushToUser(debt.user_id, {
+        title: debt.is_overdue
+          ? `⚠️ Dívida vencida — ${debt.description}`
+          : `📌 Dívida vence hoje — ${debt.description}`,
+        body: `${tipo}: ${valor}${quem}`,
+        url: debt.type === 'payable' ? '/debts/payable' : '/debts/receivable'
+      })
+      await query('UPDATE debts SET push_due_sent_at = NOW() WHERE id = $1', [debt.id])
+    }
+  } catch (err) { app.log.error({ err: err.message }, 'Erro push dívidas') }
 })
 
 // A cada minuto: lembretes de eventos via WhatsApp
@@ -359,24 +387,26 @@ cron.schedule('0 8 * * *', async () => {
     `)
     if (updated.rowCount > 0) app.log.info(`${updated.rowCount} dívidas marcadas como vencidas`)
 
-    // Notificar credores/devedores via WhatsApp (máx 1x por dia)
+    // Notificar devedores via WhatsApp: vencidas, vencendo hoje ou N dias antes (máx 1x por dia)
     const debtsToNotify = await query(`
       SELECT d.*, ws.instance_token
       FROM debts d
       JOIN whatsapp_settings ws ON ws.user_id = d.user_id
-      WHERE d.status IN ('overdue', 'partial')
-        AND d.contact_phone IS NOT NULL
+      WHERE d.deleted_at IS NULL
+        AND d.status IN ('pending', 'partial', 'overdue')
+        AND COALESCE(d.auto_notify, true) = true
+        AND d.contact_phone IS NOT NULL AND d.contact_phone != ''
         AND d.type = 'receivable'
+        AND d.due_date IS NOT NULL
+        AND d.due_date <= CURRENT_DATE + (COALESCE(d.notify_days_before, 0) || ' days')::interval
         AND ws.instance_token IS NOT NULL AND ws.instance_token != ''
         AND (d.last_notified_at IS NULL OR d.last_notified_at < CURRENT_DATE)
     `)
 
     for (const debt of debtsToNotify.rows) {
       try {
-        const remaining = parseFloat(debt.amount) - parseFloat(debt.paid_amount)
-        const dueDate = new Date(debt.due_date).toLocaleDateString('pt-BR')
         const cleanPhone = debt.contact_phone.replace(/\D/g, '')
-        const message = `Olá ${debt.contact_name || ''}! 👋\n\nLembrando sobre o valor de *R$ ${remaining.toFixed(2).replace('.', ',')}* referente a: *${debt.description}*\n\nVencimento: ${dueDate}\n\nQualquer dúvida, estou à disposição! 😊`
+        const message = debtChargeMessage(debt)
 
         await axios.post(`${UAZAPI_URL}/send/text`, {
           number: cleanPhone, text: message
@@ -734,9 +764,9 @@ cron.schedule('5 0 * * *', async () => {
 
         // Cria a nova ocorrência (sem marcar como recorrente — o template é a original)
         await query(`
-          INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id, is_recurring, recurrence_next_date)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, null)
-        `, [d.description, d.amount, d.type, d.contact_name, d.contact_phone, dueStr, d.installments || 1, d.notes, d.user_id])
+          INSERT INTO debts (description, amount, type, contact_name, contact_phone, due_date, installments, notes, user_id, is_recurring, recurrence_next_date, auto_notify, notify_days_before)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, null, $10, $11)
+        `, [d.description, d.amount, d.type, d.contact_name, d.contact_phone, dueStr, d.installments || 1, d.notes, d.user_id, d.auto_notify !== false, d.notify_days_before || 0])
 
         // Avança o próximo vencimento do template em 1 mês
         const parts = dueStr.split('-')

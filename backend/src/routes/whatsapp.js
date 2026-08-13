@@ -1,5 +1,6 @@
 import { query, logActivity } from '../db/index.js'
 import axios from 'axios'
+import { debtChargeMessage } from './debts.js'
 
 const ADMIN_TOKEN = process.env.UAZAPI_TOKEN   // admintoken — para criar instâncias
 const SERVER_URL  = process.env.UAZAPI_URL      // https://gestormsx.uazapi.com
@@ -193,13 +194,7 @@ export default async function whatsappRoutes(app) {
     const instanceToken = await getInstanceToken(userId)
     if (!instanceToken) return reply.code(400).send({ error: 'WhatsApp não conectado' })
 
-    const remaining = parseFloat(debt.amount) - parseFloat(debt.paid_amount)
-    const dueDate = debt.due_date ? new Date(debt.due_date).toLocaleDateString('pt-BR') : 'não definido'
-
-    const message = custom_message || (debt.type === 'receivable'
-      ? `Olá ${debt.contact_name || ''}! 👋\n\nPassando para lembrar sobre o valor de *R$ ${remaining.toFixed(2).replace('.', ',')}* referente a: *${debt.description}*\n\nVencimento: ${dueDate}\n\nQualquer dúvida, estou à disposição!`
-      : `Lembrete: Você tem uma dívida de *R$ ${remaining.toFixed(2).replace('.', ',')}* com ${debt.contact_name || 'credor'}\nReferente a: ${debt.description}\nVencimento: ${dueDate}`)
-
+    const message = custom_message || debtChargeMessage(debt)
     const cleanNumber = debt.contact_phone.replace(/\D/g, '')
 
     try {
@@ -211,6 +206,7 @@ export default async function whatsappRoutes(app) {
         timeout: 15000
       })
 
+      await query('UPDATE debts SET last_notified_at = NOW() WHERE id = $1', [debt.id])
       await logActivity(userId, 'WHATSAPP_DEBT_NOTIFY', 'debt', debt.id,
         `Notificação enviada para ${debt.contact_name} (${cleanNumber})`)
       return { success: true }

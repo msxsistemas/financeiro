@@ -23,7 +23,7 @@ const statusColor = {
 const defaultForm = {
   description: '', amount: '', type: 'payable', contact_name: '',
   contact_phone: '', due_date: '', installments: 1, notes: '', auto_installments: false,
-  is_recurring: false
+  is_recurring: false, auto_notify: true, notify_days_before: '0'
 }
 
 export default function Debts({ forcedTab }) {
@@ -59,6 +59,13 @@ export default function Debts({ forcedTab }) {
   const [statusFilter, setStatusFilter] = useState('')
   const [period, setPeriod] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [notifying, setNotifying] = useState(null)
+  const [notifyingAll, setNotifyingAll] = useState(false)
+
+  const loadStats = useCallback(() => {
+    api.get('/api/debts/stats').then(r => setStats(r.data)).catch(() => {})
+  }, [])
 
   const load = useCallback(async (reset = true) => {
     if (reset) { pageRef.current = 1; setLoading(true) }
@@ -93,6 +100,7 @@ export default function Debts({ forcedTab }) {
   }, [hasMore, loadingMore, loading, load])
 
   useEffect(() => { load(true) }, [load])
+  useEffect(() => { loadStats() }, [loadStats])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -115,7 +123,9 @@ export default function Debts({ forcedTab }) {
       due_date: item.due_date ? String(item.due_date).substring(0, 10) : '',
       installments: item.installments || 1,
       notes: item.notes || '', status: item.status,
-      is_recurring: !!item.is_recurring
+      is_recurring: !!item.is_recurring,
+      auto_notify: item.auto_notify !== false,
+      notify_days_before: String(item.notify_days_before ?? 0)
     })
     setModal(true)
   }
@@ -136,15 +146,16 @@ export default function Debts({ forcedTab }) {
 
   const handleSave = async () => {
     if (!form.description || !form.amount) return toast.error('Preencha os campos obrigatórios')
+    const payload = { ...form, notify_days_before: parseInt(form.notify_days_before) || 0 }
     try {
       if (editing) {
-        await api.put(`/api/debts/${editing.id}`, form)
+        await api.put(`/api/debts/${editing.id}`, payload)
         toast.success('Atualizado!')
       } else {
-        await api.post('/api/debts', form)
+        await api.post('/api/debts', payload)
         toast.success('Dívida criada!')
       }
-      setModal(false); load()
+      setModal(false); load(); loadStats()
     } catch (err) { toast.error(err.response?.data?.error || 'Erro ao salvar') }
   }
 
@@ -153,7 +164,7 @@ export default function Debts({ forcedTab }) {
     try {
       await api.post(`/api/debts/${selected.id}/pay`, payForm)
       toast.success('Pagamento registrado!')
-      setPayModal(false); load()
+      setPayModal(false); load(); loadStats()
     } catch (err) { toast.error(err.response?.data?.error || 'Erro ao registrar pagamento') }
   }
 
@@ -188,10 +199,23 @@ export default function Debts({ forcedTab }) {
   }
 
   const handleNotify = async (item) => {
+    if (!item.contact_phone) return toast.error('Dívida sem telefone para cobrar')
+    setNotifying(item.id)
     try {
       await api.post(`/api/whatsapp/notify-debt/${item.id}`)
-      toast.success('Notificação enviada via WhatsApp!')
-    } catch (err) { toast.error(err.response?.data?.error || 'Erro ao enviar notificação') }
+      toast.success('Cobrança enviada via WhatsApp!')
+    } catch (err) { toast.error(err.response?.data?.error || 'Erro ao enviar cobrança') }
+    finally { setNotifying(null) }
+  }
+
+  const handleNotifyOverdue = async () => {
+    setNotifyingAll(true)
+    try {
+      const { data } = await api.post('/api/debts/notify-overdue')
+      toast.success(data.message)
+      load()
+    } catch (err) { toast.error(err.response?.data?.error || 'Erro ao enviar cobranças') }
+    finally { setNotifyingAll(false) }
   }
 
   const handleDuplicate = async (item) => {
@@ -210,12 +234,12 @@ export default function Debts({ forcedTab }) {
       }
       await api.post('/api/debts', payload)
       toast.success('Dívida duplicada!')
-      load()
+      load(); loadStats()
     } catch (err) { toast.error(err.response?.data?.error || 'Erro ao duplicar') }
   }
 
   const handleDelete = async (id) => {
-    try { await api.delete(`/api/debts/${id}`); toast.success('Removido!'); setDeleteConfirm(null); load() }
+    try { await api.delete(`/api/debts/${id}`); toast.success('Removido!'); setDeleteConfirm(null); load(); loadStats() }
     catch { toast.error('Erro ao remover') }
   }
 
@@ -223,12 +247,18 @@ export default function Debts({ forcedTab }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dívidas</h1>
-          <p className="text-gray-500 text-sm">{total} registros</p>
+          <p className="text-gray-500 text-sm">Cobranças particulares · {total} registros</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {tab === 'receivable' && stats?.overdue_count > 0 && (
+            <button onClick={handleNotifyOverdue} disabled={notifyingAll}
+              className="bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
+              {notifyingAll ? '⏳ Enviando...' : `📲 Cobrar vencidas (${stats.overdue_count})`}
+            </button>
+          )}
           <button onClick={handleExportCSV} disabled={csvLoading}
             className="border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 px-3 py-2 rounded-lg text-sm">
             {csvLoading ? '⏳' : '📥 CSV'}
@@ -239,6 +269,46 @@ export default function Debts({ forcedTab }) {
         </div>
       </div>
 
+
+      {/* Cards de resumo */}
+      {stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Em Aberto</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.open_count}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">A Receber</p>
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(stats.total_receivable)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">A Pagar</p>
+            <p className="text-xl font-bold text-red-500">{fmt(stats.total_payable)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas{stats.due_today_count > 0 ? ` · ${stats.due_today_count} hoje` : ''}</p>
+            <p className="text-xl font-bold text-orange-500">{stats.overdue_count}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tab === 'payable' ? 'Total Pago' : 'Total Recebido'}</p>
+            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fmt(tab === 'payable' ? stats.total_paid : stats.total_received)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      {!forcedTab && (
+        <div className="flex gap-1 border-b dark:border-gray-700">
+          <button onClick={() => { setTab('receivable'); navigateTo('/debts/receivable') }}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === 'receivable' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+            A Receber
+          </button>
+          <button onClick={() => { setTab('payable'); navigateTo('/debts/payable') }}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === 'payable' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+            A Pagar
+          </button>
+        </div>
+      )}
 
       {/* Filtros */}
       <PeriodFilter value={period} onChange={setPeriod} />
@@ -277,6 +347,12 @@ export default function Debts({ forcedTab }) {
                     </span>
                     {isOverdue && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 shrink-0">⚠️ Vencido</span>}
                     {item.is_recurring && <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0" title="Repete todo mês">🔁 Mensal</span>}
+                    {item.auto_notify !== false && item.contact_phone && item.type === 'receivable' && item.status !== 'paid' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 shrink-0"
+                        title={`Cobrança automática ${item.notify_days_before > 0 ? `${item.notify_days_before} dia(s) antes do vencimento` : 'no vencimento'}`}>
+                        🔔 Auto
+                      </span>
+                    )}
                   </div>
                   {item.contact_name && (
                     <p className="text-sm text-gray-500">👤 {item.contact_name} {item.contact_phone && `· 📱 ${item.contact_phone}`}</p>
@@ -312,7 +388,10 @@ export default function Debts({ forcedTab }) {
                   <button onClick={() => openPay(item)} className="text-xs text-green-600 hover:text-green-800">💳 Pagar</button>
                 )}
                 {item.contact_phone && item.status !== 'paid' && (
-                  <button onClick={() => handleNotify(item)} className="text-xs text-emerald-600 hover:text-emerald-800">💬 Notificar</button>
+                  <button onClick={() => handleNotify(item)} disabled={notifying === item.id}
+                    className="text-xs text-emerald-600 hover:text-emerald-800 disabled:opacity-60">
+                    {notifying === item.id ? '⏳ Enviando...' : '💬 Cobrar'}
+                  </button>
                 )}
                 <button onClick={() => handleDuplicate(item)} className="text-xs text-amber-600 hover:text-amber-800" title="Criar outra dívida igual a esta com vencimento hoje">🔁 Duplicar</button>
                 <button onClick={() => handleDownloadPDF(item)} disabled={pdfLoading === item.id} className="text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50">
@@ -444,6 +523,29 @@ export default function Debts({ forcedTab }) {
               </div>
             </label>
           )}
+
+          {/* Cobrança automática no vencimento */}
+          <div className="border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 bg-indigo-50 dark:bg-indigo-900/20">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">🔔 Notificar vencimento (WhatsApp)</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={!!form.auto_notify}
+                  onChange={e => f('auto_notify', e.target.checked)} className="sr-only peer" />
+                <div className="w-10 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:ring-2 rounded-full peer peer-checked:bg-indigo-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+              </label>
+            </div>
+            {form.auto_notify && (
+              <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 mt-3">
+                <span>Avisar</span>
+                <NumberStepper value={String(form.notify_days_before ?? '0')} min={0} max={30}
+                  onChange={v => f('notify_days_before', v)} />
+                <span>dia(s) antes + no vencimento e vencidas</span>
+              </div>
+            )}
+            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
+              Cobrança automática às 8h (só para dívidas a receber com telefone). Você também recebe um push no dia do vencimento.
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
