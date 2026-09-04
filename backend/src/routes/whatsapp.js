@@ -183,7 +183,7 @@ export default async function whatsappRoutes(app) {
   // Notificar dívida via WhatsApp
   app.post('/notify-debt/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
-    const { custom_message } = request.body
+    const { custom_message } = request.body || {}
 
     const debtRes = await query('SELECT * FROM debts WHERE id = $1 AND user_id = $2', [request.params.id, userId])
     if (!debtRes.rows[0]) return reply.code(404).send({ error: 'Dívida não encontrada' })

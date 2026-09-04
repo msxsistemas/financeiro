@@ -485,7 +485,7 @@ export default async function loansRoutes(app) {
   app.post('/installments/:id/pay', { schema: payInstallmentSchema, preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
     const { id } = request.params
-    const { paid_amount, notes } = request.body
+    const { paid_amount, notes } = request.body || {}
 
     const instRes = await query(
       'SELECT li.*, l.contact_name FROM loan_installments li JOIN loans l ON l.id = li.loan_id WHERE li.id = $1 AND li.user_id = $2 AND l.deleted_at IS NULL',
@@ -670,7 +670,7 @@ export default async function loansRoutes(app) {
   app.post('/installments/:id/notify', { preHandler: [app.authenticate] }, async (request, reply) => {
     const userId = request.user.id
     const { id } = request.params
-    const { custom_message } = request.body
+    const { custom_message } = request.body || {}
 
     const instRes = await query(`
       SELECT li.*, l.contact_name, l.contact_phone, l.interest_rate, l.frequency, l.custom_message,
