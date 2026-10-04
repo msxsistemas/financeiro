@@ -28,6 +28,7 @@ function generateInstallments(loan) {
       let dueDate = new Date(firstDueDateStr + 'T12:00:00')
       if (frequency === 'daily') dueDate.setDate(dueDate.getDate() + (i - 1))
       else if (frequency === 'weekly') dueDate.setDate(dueDate.getDate() + (i - 1) * 7)
+      else if (frequency === 'biweekly') dueDate.setDate(dueDate.getDate() + (i - 1) * 15)
       else dueDate.setMonth(dueDate.getMonth() + (i - 1))
 
       const interest = balance * rate
@@ -61,6 +62,7 @@ function generateInstallments(loan) {
       let dueDate = new Date(firstDueDateStr + 'T12:00:00')
       if (frequency === 'daily') dueDate.setDate(dueDate.getDate() + (i - 1))
       else if (frequency === 'weekly') dueDate.setDate(dueDate.getDate() + (i - 1) * 7)
+      else if (frequency === 'biweekly') dueDate.setDate(dueDate.getDate() + (i - 1) * 15)
       else dueDate.setMonth(dueDate.getMonth() + (i - 1))
 
       // Última parcela absorve resíduo de arredondamento
@@ -111,7 +113,7 @@ const createLoanSchema = {
       principal_amount: { type: 'number', exclusiveMinimum: 0 },
       interest_rate: { type: 'number', minimum: 0, maximum: 100 },
       interest_type: { type: 'string', enum: ['simple', 'compound'] },
-      frequency: { type: 'string', enum: ['daily', 'weekly', 'monthly'] },
+      frequency: { type: 'string', enum: ['daily', 'weekly', 'biweekly', 'monthly'] },
       installments: { type: 'integer', minimum: 1, maximum: 360 },
       start_date: { type: ['string', 'null'] },
       first_due_date: { type: 'string' },

@@ -35,7 +35,7 @@ const statusColor = {
   defaulted: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
 }
 
-const freqLabel = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal' }
+const freqLabel = { daily: 'Diário', weekly: 'Semanal', biweekly: 'Quinzenal', monthly: 'Mensal' }
 
 const defaultForm = {
   contact_id: '', contact_name: '', contact_phone: '',
@@ -629,6 +629,7 @@ export default function Loans() {
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white">
                 <option value="daily">Diário</option>
                 <option value="weekly">Semanal</option>
+                <option value="biweekly">Quinzenal</option>
                 <option value="monthly">Mensal</option>
               </select>
             </div>

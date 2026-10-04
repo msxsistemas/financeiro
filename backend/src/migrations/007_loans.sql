@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS loans (
   principal_amount DECIMAL(12,2) NOT NULL,
   interest_rate DECIMAL(8,4) NOT NULL DEFAULT 0,       -- % por período (ex: 10 = 10%)
   interest_type VARCHAR(20) NOT NULL DEFAULT 'simple', -- simple | compound
-  frequency VARCHAR(20) NOT NULL DEFAULT 'monthly',    -- daily | weekly | monthly
+  frequency VARCHAR(20) NOT NULL DEFAULT 'monthly',    -- daily | weekly | biweekly | monthly
   installments INTEGER NOT NULL DEFAULT 1,
   start_date DATE NOT NULL DEFAULT CURRENT_DATE,
   first_due_date DATE NOT NULL,
