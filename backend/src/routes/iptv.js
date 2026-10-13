@@ -1,4 +1,5 @@
 import { query, logActivity } from '../db/index.js'
+import { encryptSecret, decryptSecret, isEncrypted } from '../utils/secretBox.js'
 
 export default async function iptvRoutes(app) {
 
@@ -20,7 +21,14 @@ export default async function iptvRoutes(app) {
     // Acesso ao painel do servidor (link, usuario e senha)
     await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_url TEXT`).catch(() => {})
     await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_username VARCHAR(150)`).catch(() => {})
-    await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_password VARCHAR(255)`).catch(() => {})
+    await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_password TEXT`).catch(() => {})
+    await query(`ALTER TABLE iptv_servers ALTER COLUMN panel_password TYPE TEXT`).catch(() => {})
+    // Criptografa senhas que ainda estejam em texto puro
+    const plain = await query(`SELECT id, panel_password FROM iptv_servers WHERE panel_password IS NOT NULL AND panel_password NOT LIKE 'enc:%'`).catch(() => ({ rows: [] }))
+    for (const r of plain.rows) {
+      if (isEncrypted(r.panel_password)) continue
+      await query(`UPDATE iptv_servers SET panel_password = $1 WHERE id = $2`, [encryptSecret(r.panel_password), r.id]).catch(() => {})
+    }
     await query(`
       CREATE TABLE IF NOT EXISTS iptv_resellers (
         id SERIAL PRIMARY KEY,
@@ -124,6 +132,7 @@ export default async function iptvRoutes(app) {
       const cost = creditValue * (creditsSold + myClients)
       return {
         ...s,
+        panel_password: decryptSecret(s.panel_password),
         max_clients: parseInt(s.max_clients),
         credit_value: creditValue,
         credits_sold: creditsSold,
@@ -143,10 +152,10 @@ export default async function iptvRoutes(app) {
     const res = await query(
       `INSERT INTO iptv_servers (user_id, name, max_clients, credit_value, panel_url, panel_username, panel_password)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.user.id, name, max_clients || 0, credit_value || 0, panel_url || null, panel_username || null, panel_password || null]
+      [req.user.id, name, max_clients || 0, credit_value || 0, panel_url || null, panel_username || null, encryptSecret(panel_password)]
     )
     await logActivity(req.user.id, 'CREATE', 'iptv_server', res.rows[0].id, `Servidor IPTV: ${name}`)
-    return reply.code(201).send(res.rows[0])
+    return reply.code(201).send({ ...res.rows[0], panel_password: decryptSecret(res.rows[0].panel_password) })
   })
 
   app.put('/servers/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
@@ -156,10 +165,10 @@ export default async function iptvRoutes(app) {
          panel_url=$5, panel_username=$6, panel_password=$7
        WHERE id=$8 AND user_id=$9 RETURNING *`,
       [name, max_clients || 0, credit_value || 0, active ?? true,
-       panel_url || null, panel_username || null, panel_password || null, req.params.id, req.user.id]
+       panel_url || null, panel_username || null, encryptSecret(panel_password), req.params.id, req.user.id]
     )
     if (!res.rows[0]) return reply.code(404).send({ error: 'Nao encontrado' })
-    return res.rows[0]
+    return { ...res.rows[0], panel_password: decryptSecret(res.rows[0].panel_password) }
   })
 
   app.delete('/servers/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
