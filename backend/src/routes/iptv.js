@@ -1,5 +1,5 @@
 import { query, logActivity } from '../db/index.js'
-import { encryptSecret, decryptSecret, isEncrypted } from '../utils/secretBox.js'
+import { encryptSecret, decryptSecret, needsReencrypt } from '../utils/secretBox.js'
 
 export default async function iptvRoutes(app) {
 
@@ -23,11 +23,11 @@ export default async function iptvRoutes(app) {
     await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_username VARCHAR(150)`).catch(() => {})
     await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_password TEXT`).catch(() => {})
     await query(`ALTER TABLE iptv_servers ALTER COLUMN panel_password TYPE TEXT`).catch(() => {})
-    // Criptografa senhas que ainda estejam em texto puro
-    const plain = await query(`SELECT id, panel_password FROM iptv_servers WHERE panel_password IS NOT NULL AND panel_password NOT LIKE 'enc:%'`).catch(() => ({ rows: [] }))
-    for (const r of plain.rows) {
-      if (isEncrypted(r.panel_password)) continue
-      await query(`UPDATE iptv_servers SET panel_password = $1 WHERE id = $2`, [encryptSecret(r.panel_password), r.id]).catch(() => {})
+    // Criptografa senhas em texto puro e recifra as que usam a chave antiga (JWT_SECRET)
+    const pwds = await query(`SELECT id, panel_password FROM iptv_servers WHERE panel_password IS NOT NULL`).catch(() => ({ rows: [] }))
+    for (const r of pwds.rows) {
+      if (!needsReencrypt(r.panel_password)) continue
+      await query(`UPDATE iptv_servers SET panel_password = $1 WHERE id = $2`, [encryptSecret(decryptSecret(r.panel_password)), r.id]).catch(() => {})
     }
     await query(`
       CREATE TABLE IF NOT EXISTS iptv_resellers (
