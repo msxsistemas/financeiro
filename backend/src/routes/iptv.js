@@ -17,6 +17,10 @@ export default async function iptvRoutes(app) {
     `)
     await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS max_clients INTEGER DEFAULT 0`).catch(() => {})
     await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS credit_value NUMERIC(10,2) DEFAULT 0`).catch(() => {})
+    // Acesso ao painel do servidor (link, usuario e senha)
+    await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_url TEXT`).catch(() => {})
+    await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_username VARCHAR(150)`).catch(() => {})
+    await query(`ALTER TABLE iptv_servers ADD COLUMN IF NOT EXISTS panel_password VARCHAR(255)`).catch(() => {})
     await query(`
       CREATE TABLE IF NOT EXISTS iptv_resellers (
         id SERIAL PRIMARY KEY,
@@ -134,21 +138,25 @@ export default async function iptvRoutes(app) {
   })
 
   app.post('/servers', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { name, max_clients, credit_value } = req.body
+    const { name, max_clients, credit_value, panel_url, panel_username, panel_password } = req.body || {}
     if (!name) return reply.code(400).send({ error: 'Nome e obrigatorio' })
     const res = await query(
-      `INSERT INTO iptv_servers (user_id, name, max_clients, credit_value) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [req.user.id, name, max_clients || 0, credit_value || 0]
+      `INSERT INTO iptv_servers (user_id, name, max_clients, credit_value, panel_url, panel_username, panel_password)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [req.user.id, name, max_clients || 0, credit_value || 0, panel_url || null, panel_username || null, panel_password || null]
     )
     await logActivity(req.user.id, 'CREATE', 'iptv_server', res.rows[0].id, `Servidor IPTV: ${name}`)
     return reply.code(201).send(res.rows[0])
   })
 
   app.put('/servers/:id', { preHandler: [app.authenticate] }, async (req, reply) => {
-    const { name, max_clients, credit_value, active } = req.body
+    const { name, max_clients, credit_value, active, panel_url, panel_username, panel_password } = req.body || {}
     const res = await query(
-      `UPDATE iptv_servers SET name=$1, max_clients=$2, credit_value=$3, active=$4 WHERE id=$5 AND user_id=$6 RETURNING *`,
-      [name, max_clients || 0, credit_value || 0, active ?? true, req.params.id, req.user.id]
+      `UPDATE iptv_servers SET name=$1, max_clients=$2, credit_value=$3, active=$4,
+         panel_url=$5, panel_username=$6, panel_password=$7
+       WHERE id=$8 AND user_id=$9 RETURNING *`,
+      [name, max_clients || 0, credit_value || 0, active ?? true,
+       panel_url || null, panel_username || null, panel_password || null, req.params.id, req.user.id]
     )
     if (!res.rows[0]) return reply.code(404).send({ error: 'Nao encontrado' })
     return res.rows[0]

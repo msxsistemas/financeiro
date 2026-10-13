@@ -14,6 +14,13 @@ const currentPeriod = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 const currentYear = () => String(new Date().getFullYear())
+const EMPTY_SERVER_FORM = { name: '', credit_value: '', panel_url: '', panel_username: '', panel_password: '' }
+const panelHref = url => (/^https?:\/\//i.test(url) ? url : `http://${url}`)
+const copyText = (text, label) => {
+  navigator.clipboard?.writeText(text)
+    .then(() => toast.success(`${label} copiado!`))
+    .catch(() => toast.error('Nao foi possivel copiar'))
+}
 const isYear = p => !!p && /^\d{4}$/.test(p)
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const periodLabel = p => {
@@ -96,7 +103,9 @@ export default function IPTV() {
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   // Forms
-  const [serverForm, setServerForm] = useState({ name: '', credit_value: '' })
+  const [serverForm, setServerForm] = useState(EMPTY_SERVER_FORM)
+  const [showPanelPwd, setShowPanelPwd] = useState(false)
+  const [visiblePwds, setVisiblePwds] = useState({})
   const [resellerForm, setResellerForm] = useState({ server_id: '', contact_id: '', name: '', phone: '', credit_quantity: '', credit_sell_value: '', notes: '' })
   const [clientForm, setClientForm] = useState({ server_id: '', contact_id: '', name: '', phone: '', credit_quantity: '1', sell_value: '', notes: '' })
 
@@ -154,13 +163,28 @@ export default function IPTV() {
   }
 
   // ── Server CRUD
-  const openNewServer = () => { setEditItem(null); setServerForm({ name: '', credit_value: '' }); setServerModal(true) }
-  const openEditServer = s => { setEditItem(s); setServerForm({ name: s.name, credit_value: s.credit_value || '' }); setServerModal(true) }
+  const openNewServer = () => { setEditItem(null); setServerForm(EMPTY_SERVER_FORM); setShowPanelPwd(false); setServerModal(true) }
+  const openEditServer = s => {
+    setEditItem(s)
+    setServerForm({
+      name: s.name, credit_value: s.credit_value || '',
+      panel_url: s.panel_url || '', panel_username: s.panel_username || '', panel_password: s.panel_password || ''
+    })
+    setShowPanelPwd(false)
+    setServerModal(true)
+  }
   const saveServer = async () => {
     if (!serverForm.name) return toast.error('Nome obrigatorio')
     setSaving(true)
     try {
-      const p = { ...serverForm, credit_value: parseFloat(serverForm.credit_value) || 0 }
+      const p = {
+        ...serverForm,
+        panel_url: serverForm.panel_url.trim(),
+        panel_username: serverForm.panel_username.trim(),
+        credit_value: parseFloat(serverForm.credit_value) || 0,
+        // Preserva campos que o modal nao edita (o PUT sobrescreve todos)
+        ...(editItem ? { max_clients: editItem.max_clients, active: editItem.active } : {})
+      }
       if (editItem) await api.put(`/api/iptv/servers/${editItem.id}`, p)
       else await api.post('/api/iptv/servers', p)
       toast.success('Salvo!'); setServerModal(false); load()
@@ -426,7 +450,37 @@ export default function IPTV() {
                 <tbody>
                   {servers.map(s => (
                     <tr key={s.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-4 py-3"><p className="font-medium text-gray-800 dark:text-white">{s.name}</p></td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-800 dark:text-white">{s.name}</p>
+                        {(s.panel_url || s.panel_username || s.panel_password) && (
+                          <div className="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                            {s.panel_url && (
+                              <div className="flex items-center gap-1.5">
+                                <span>🔗</span>
+                                <a href={panelHref(s.panel_url)} target="_blank" rel="noopener noreferrer"
+                                  className="text-indigo-600 dark:text-indigo-400 hover:underline truncate max-w-[220px]">{s.panel_url}</a>
+                                <button onClick={() => copyText(s.panel_url, 'Link')} className="hover:text-indigo-600" title="Copiar link">📋</button>
+                              </div>
+                            )}
+                            {s.panel_username && (
+                              <div className="flex items-center gap-1.5">
+                                <span>👤</span>
+                                <span className="font-mono">{s.panel_username}</span>
+                                <button onClick={() => copyText(s.panel_username, 'Usuario')} className="hover:text-indigo-600" title="Copiar usuario">📋</button>
+                              </div>
+                            )}
+                            {s.panel_password && (
+                              <div className="flex items-center gap-1.5">
+                                <span>🔑</span>
+                                <span className="font-mono">{visiblePwds[s.id] ? s.panel_password : '••••••••'}</span>
+                                <button onClick={() => setVisiblePwds(p => ({ ...p, [s.id]: !p[s.id] }))} className="hover:text-indigo-600"
+                                  title={visiblePwds[s.id] ? 'Ocultar senha' : 'Mostrar senha'}>{visiblePwds[s.id] ? '🙈' : '👁️'}</button>
+                                <button onClick={() => copyText(s.panel_password, 'Senha')} className="hover:text-indigo-600" title="Copiar senha">📋</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center font-bold text-gray-900 dark:text-white">{s.max_clients}</td>
                       <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{fmt(s.credit_value)}</td>
                       <td className="px-4 py-3 text-right font-medium text-green-600">{fmt(s.total_revenue)}</td>
@@ -718,6 +772,29 @@ export default function IPTV() {
             <MaskedInput mask="currency" value={serverForm.credit_value} onValueChange={v => setServerForm(p => ({ ...p, credit_value: v }))}
               className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="0,00" />
             <p className="text-xs text-gray-400 mt-1">Seu custo por credito neste servidor</p>
+          </div>
+          <div className="border-t dark:border-gray-700 pt-4 space-y-3">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Acesso ao painel</p>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Link</label>
+              <input value={serverForm.panel_url} onChange={e => setServerForm(p => ({ ...p, panel_url: e.target.value }))}
+                className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="https://painel.exemplo.com" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Usuario</label>
+              <input value={serverForm.panel_username} onChange={e => setServerForm(p => ({ ...p, panel_username: e.target.value }))}
+                autoComplete="off" className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm" placeholder="Usuario do painel" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Senha</label>
+              <div className="relative">
+                <input type={showPanelPwd ? 'text' : 'password'} value={serverForm.panel_password}
+                  onChange={e => setServerForm(p => ({ ...p, panel_password: e.target.value }))}
+                  autoComplete="new-password" className="w-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg pl-3 pr-10 py-2 text-sm" placeholder="Senha do painel" />
+                <button type="button" onClick={() => setShowPanelPwd(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sm" title={showPanelPwd ? 'Ocultar' : 'Mostrar'}>{showPanelPwd ? '🙈' : '👁️'}</button>
+              </div>
+            </div>
           </div>
           <div className="flex gap-3 pt-2">
             <button onClick={() => setServerModal(false)} className="flex-1 border dark:border-gray-600 dark:text-gray-300 py-2 rounded-lg text-sm">Cancelar</button>
